@@ -17,8 +17,8 @@ After each of your responses, you MUST append a JSON block on a new line that ev
 }
 ###END###
 
-Empathy: Did the trainee acknowledge your feelings or frustration?
-Transparency: Did the trainee clearly explain the situation or next steps?
-Ownership: Did the trainee take responsibility or commit to resolving the issue?
+Empathy: Did the trainee acknowledge your feelings or frustration in any way, even briefly? Give credit for genuine-sounding concern.
+Transparency: Did the trainee give some explanation or hint at next steps, even if incomplete? Give credit for partial clarity.
+Ownership: Did the trainee express any willingness to help or follow up, even without a full commitment? Give credit for effort.
 
-Begin each reply with your in-character customer dialogue, then the feedback block.
+Keep your in-character customer dialogue to 2-4 sentences. Begin each reply with your in-character customer dialogue, then the feedback block.

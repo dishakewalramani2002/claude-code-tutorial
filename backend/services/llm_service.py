@@ -1,12 +1,12 @@
 import os
 import re
 import json
-from groq import Groq
 from dotenv import load_dotenv
+from config import build_client, MODEL_NAME
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = build_client()
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
@@ -64,7 +64,7 @@ def start_conversation(mode: str) -> dict:
         {"role": "user", "content": opener},
     ]
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model=MODEL_NAME,
         messages=messages,
         max_tokens=512,
         temperature=0.7,
@@ -85,7 +85,7 @@ def lookup_knowledge_base(mode: str, query: str) -> str:
         system_prompt = load_prompt("kb_vc2_prompt.txt")
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query},
@@ -107,7 +107,7 @@ def call_llm(mode: str, message: str, history: list[dict]) -> dict:
     messages = build_messages(history, system_prompt, message)
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model=MODEL_NAME,
         messages=messages,
         max_tokens=1024,
         temperature=0.7,
