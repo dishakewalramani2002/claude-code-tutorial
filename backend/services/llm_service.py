@@ -96,6 +96,60 @@ def lookup_knowledge_base(mode: str, query: str) -> str:
     return response.choices[0].message.content.strip()
 
 
+def generate_report(mode: str, history: list[dict]) -> dict:
+    """Generate a full session performance report from the conversation history."""
+    system_prompt = load_prompt("report_prompt.txt")
+
+    # Build a readable transcript with any existing per-turn feedback
+    transcript_lines = []
+    for msg in history:
+        role = "Customer" if msg["role"] == "assistant" else "CSR"
+        transcript_lines.append(f"[{role}]: {msg['content']}")
+        if msg.get("feedback") and msg["role"] == "user":
+            fb = msg["feedback"]
+            transcript_lines.append(
+                f"  (Collected feedback — empathy: {fb.get('empathy')}, "
+                f"transparency: {fb.get('transparency')}, "
+                f"ownership: {fb.get('ownership')})"
+            )
+
+    transcript = "\n".join(transcript_lines)
+    domain = "Health Insurance Billing" if mode == "vc1" else "Flight Cancellation"
+    user_content = (
+        f"Mode: {mode.upper()} | Domain: {domain}\n\n"
+        f"CONVERSATION TRANSCRIPT:\n{transcript}\n\n"
+        "Generate the performance report JSON now."
+    )
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        max_tokens=2048,
+        temperature=0.3,
+    )
+
+    raw = response.choices[0].message.content.strip()
+    # Strip markdown code fences if model wraps in them
+    raw = re.sub(r"^```(?:json)?\s*", "", raw)
+    raw = re.sub(r"\s*```$", "", raw)
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # Return a minimal fallback so the frontend doesn't crash
+        return {
+            "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "N/A", "context": ""},
+            "success_criteria": [],
+            "performance": {"empathy_score": 0, "transparency_score": 0, "ownership_score": 0, "overall_score": 0, "strengths": [], "critical_mistakes": []},
+            "turn_feedback": [],
+            "key_learnings": [],
+            "recommendations": ["Report generation failed. Please review the conversation manually."],
+        }
+
+
 def call_llm(mode: str, message: str, history: list[dict]) -> dict:
     if mode == "vc1":
         system_prompt = load_prompt("vc1_prompt.txt")

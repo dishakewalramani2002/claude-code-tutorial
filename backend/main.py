@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from services.llm_service import call_llm, start_conversation, lookup_knowledge_base
+from services.llm_service import call_llm, start_conversation, lookup_knowledge_base, generate_report
 
 app = FastAPI(title="CSR Training Simulator API")
 
@@ -68,6 +68,19 @@ async def start(mode: str):
         raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
     result = start_conversation(mode)
     return ChatResponse(**result)
+
+
+class ReportRequest(BaseModel):
+    mode: str
+    history: list[dict]  # full conversation including feedback fields
+
+
+@app.post("/report")
+async def report(request: ReportRequest):
+    if request.mode not in ("vc1", "vc2"):
+        raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
+    result = generate_report(mode=request.mode, history=request.history)
+    return result
 
 
 @app.get("/health")

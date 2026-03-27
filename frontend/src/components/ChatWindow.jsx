@@ -11,7 +11,7 @@ const MODE_LABELS = {
   vc2: "Evaluation — Flight Cancellation",
 };
 
-export default function ChatWindow({ mode, onReset }) {
+export default function ChatWindow({ mode, onEndSession }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -118,10 +118,10 @@ export default function ChatWindow({ mode, onReset }) {
           </div>
         </div>
         <button
-          onClick={onReset}
+          onClick={() => onEndSession(messages)}
           className="text-sm text-gray-500 hover:text-red-500 transition"
         >
-          End Session
+          End Session & Get Report
         </button>
       </header>
 
