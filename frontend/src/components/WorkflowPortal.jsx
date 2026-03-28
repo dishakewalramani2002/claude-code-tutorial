@@ -154,6 +154,90 @@ const VC2_STEPS = [
   },
 ];
 
+// ─── VC3 DATA ────────────────────────────────────────────────────────────────
+const VC3_CUSTOMER = {
+  name: "Alex Rivera",
+  booking: "UA-5521",
+  flight: "UA 8834",
+  route: "ORD → ATL → MIA",
+  travelDate: "2 days ago",
+  bagTag: "BA-0441219",
+  pirRef: "MIA0441219",
+  tier: "United MileagePlus",
+  phone: "(312) 555-0183",
+};
+
+const VC3_TRACE = {
+  status: "EXPEDITE – Active Search",
+  lastScan: "ORD – Gate H7 area (Chicago O'Hare)",
+  daysMissing: 2,
+  pirFiled: "Yes – MIA Baggage Office",
+  contents: "Blood pressure medication (14-day supply), work laptop, client presentation materials",
+  estimatedResolution: "24–72 hours",
+};
+
+const VC3_POLICY = `DELAYED/MISSING BAGGAGE POLICY – United Airlines
+
+Tracing Status: EXPEDITE (missing > 24 hours)
+
+Interim Expense Reimbursement
+  ┌──────────────────────────────────────────────────────┐
+  │  Daily Allowance:        Up to $100/day              │
+  │  Maximum Duration:       5 days ($500 max)           │
+  │  Clothing & Toiletries:  ELIGIBLE ✓                 │
+  │  Prescription Meds:      ELIGIBLE ✓ (with Rx proof) │
+  │  Electronics (laptop):   NOT ELIGIBLE ✗             │
+  └──────────────────────────────────────────────────────┘
+  Requires original receipts submitted within 30 days.
+
+Medical Priority Flag
+  • Bags containing medication should be flagged MEDICAL PRIORITY
+  • Triggers daily status checks and escalated search
+  • Advise passenger to contact pharmacy for emergency supply
+
+Final Loss Settlement (if bag not found in 21 days)
+  • DOT domestic liability limit: $3,800
+  • Passenger must file claim with receipts / proof of contents`;
+
+const VC3_STEPS = [
+  {
+    id: "lookup",
+    label: "Passenger Lookup",
+    icon: "🔍",
+    prompt: { type: "customer", text: "Ask the passenger for their PIR reference number or bag tag number before searching." },
+  },
+  {
+    id: "claim",
+    label: "Baggage Claim Detail",
+    icon: "🧳",
+    prompt: { type: "action", text: "Review the bag details and filed PIR. Click 'Check WorldTracer Status' to see the current trace." },
+  },
+  {
+    id: "trace",
+    label: "WorldTracer Status",
+    icon: "🌐",
+    prompt: { type: "action", text: "Note the last scan location and estimated resolution. The bag contains medication — flag as Medical Priority." },
+  },
+  {
+    id: "policy",
+    label: "Interim Expenses Policy",
+    icon: "📋",
+    prompt: { type: "action", text: "Review what expenses can be reimbursed. Select the correct reimbursement package for this passenger." },
+  },
+  {
+    id: "apply",
+    label: "Apply Resolution",
+    icon: "✅",
+    prompt: { type: "action", text: "Flag the file as Medical Priority and authorize interim expense reimbursement. Then click Confirm." },
+  },
+  {
+    id: "communicate",
+    label: "Communicate to Passenger",
+    icon: "💬",
+    prompt: { type: "customer", text: "Return to the customer tab and deliver the update and next steps below." },
+  },
+];
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function PromptBanner({ prompt }) {
   const isCustomer = prompt.type === "customer";
@@ -669,9 +753,218 @@ function VC2Communicate({ onReset }) {
   );
 }
 
+// ─── VC3 STEP SCREENS ────────────────────────────────────────────────────────
+function VC3Lookup({ onAdvance }) {
+  const [query, setQuery] = useState("");
+  const [found, setFound] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">Passenger & Bag Lookup</h2>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter PIR reference or bag tag number..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+        />
+        <ActionButton label="Search" variant="primary" onClick={() => query.trim() && setFound(true)} />
+      </div>
+      <div className="flex gap-2">
+        <ActionButton label="New Booking" onClick={() => setWrong(true)} />
+        <ActionButton label="File New Damage Claim" onClick={() => setWrong(true)} />
+        <ActionButton label="Upgrade Seat" onClick={() => setWrong(true)} />
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      {found && (
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Passenger Record Found
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-3 text-sm">
+            {Object.entries(VC3_CUSTOMER).map(([k, v]) => (
+              <div key={k}>
+                <span className="text-gray-400 capitalize">{k.replace(/([A-Z])/g, ' $1')}: </span>
+                <span className="font-medium text-gray-800">{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
+            <ActionButton label="Open Baggage Claim →" variant="primary" onClick={onAdvance} />
+            <ActionButton label="View Booking Details" onClick={() => setWrong(true)} />
+            <ActionButton label="Issue Flight Voucher" onClick={() => setWrong(true)} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VC3Claim({ onAdvance }) {
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">Baggage Claim Detail — PIR# {VC3_CUSTOMER.pirRef}</h2>
+      <div className="grid grid-cols-2 gap-3 text-sm border border-gray-200 rounded-xl p-4 bg-white">
+        {[
+          ["Passenger", VC3_CUSTOMER.name],
+          ["Bag Tag", VC3_CUSTOMER.bagTag],
+          ["PIR Reference", VC3_CUSTOMER.pirRef],
+          ["Flight", VC3_CUSTOMER.flight],
+          ["Route", VC3_CUSTOMER.route],
+          ["Travel Date", VC3_CUSTOMER.travelDate],
+          ["Days Missing", "2"],
+          ["Status", "EXPEDITE – Active Search"],
+        ].map(([k, v]) => (
+          <div key={k}>
+            <span className="text-gray-400">{k}: </span>
+            <span className="font-medium text-gray-800">{v}</span>
+          </div>
+        ))}
+      </div>
+      <div className="text-sm border border-amber-200 bg-amber-50 rounded-xl p-3">
+        <span className="font-semibold text-amber-800">Declared contents: </span>
+        <span className="text-amber-700">{VC3_TRACE.contents}</span>
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      <div className="flex gap-2 flex-wrap">
+        <ActionButton label="Check WorldTracer Status →" variant="primary" onClick={onAdvance} />
+        <ActionButton label="Close Claim as Found" onClick={() => setWrong(true)} />
+        <ActionButton label="Issue Refund" onClick={() => setWrong(true)} />
+        <ActionButton label="Transfer to Partner Airline" onClick={() => setWrong(true)} />
+      </div>
+    </div>
+  );
+}
+
+function VC3Trace({ onAdvance }) {
+  const [flagged, setFlagged] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">WorldTracer Status — {VC3_CUSTOMER.bagTag}</h2>
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 text-sm space-y-2">
+        {[
+          ["Trace Status", VC3_TRACE.status],
+          ["Last Scanned", VC3_TRACE.lastScan],
+          ["Days Missing", `${VC3_TRACE.daysMissing} days`],
+          ["PIR Filed", VC3_TRACE.pirFiled],
+          ["Est. Resolution", VC3_TRACE.estimatedResolution],
+        ].map(([k, v]) => (
+          <div key={k}><span className="text-gray-500">{k}: </span><strong>{v}</strong></div>
+        ))}
+      </div>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800">
+        <span className="font-semibold">⚠ Medical Contents Detected:</span> Bag contains prescription medication. This file must be flagged as <strong>MEDICAL PRIORITY</strong> before proceeding.
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Required Action:</p>
+        <div className="flex gap-2 flex-wrap">
+          <ActionButton
+            label={flagged ? "✓ MEDICAL PRIORITY Flagged" : "Flag as MEDICAL PRIORITY →"}
+            variant={flagged ? "primary" : "default"}
+            onClick={() => { setFlagged(true); setWrong(false); }}
+          />
+          <ActionButton label="Mark as Low Priority" onClick={() => setWrong(true)} />
+          <ActionButton label="Close Trace" onClick={() => setWrong(true)} />
+        </div>
+        {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      </div>
+      {flagged && (
+        <div className="bg-green-50 border border-green-300 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-green-800">File flagged as MEDICAL PRIORITY. Daily status checks enabled.</p>
+          <ActionButton label="Review Interim Expenses Policy →" variant="primary" onClick={onAdvance} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VC3Policy({ onAdvance }) {
+  const [decision, setDecision] = useState(null);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">Interim Expenses Policy</h2>
+      <pre className="text-sm bg-gray-50 border border-gray-200 rounded-xl p-4 whitespace-pre-wrap font-mono leading-relaxed">
+        {VC3_POLICY}
+      </pre>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Select what applies to this passenger:</p>
+        <div className="flex gap-2 flex-wrap">
+          <ActionButton
+            label="✓ Authorize Interim Expenses + Medical Reimbursement"
+            variant={decision === "interim_medical" ? "primary" : "default"}
+            onClick={() => { setDecision("interim_medical"); setWrong(false); }}
+          />
+          <ActionButton label="Authorize Interim Expenses Only (No Medical)" onClick={() => setWrong(true)} />
+          <ActionButton label="Issue Final Settlement Now" onClick={() => setWrong(true)} />
+          <ActionButton label="No Reimbursement — Weather Policy" onClick={() => setWrong(true)} />
+        </div>
+        {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      </div>
+      {decision === "interim_medical" && (
+        <div className="bg-green-50 border border-green-300 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-green-800">Correct. Authorize up to $100/day for clothing/toiletries + medication reimbursement with prescription.</p>
+          <ActionButton label="Apply & Confirm →" variant="primary" onClick={onAdvance} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VC3Apply({ onAdvance }) {
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">Confirm Resolution Actions</h2>
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 text-sm space-y-2">
+        <div><span className="text-gray-500">Bag Tag:</span> <strong>{VC3_CUSTOMER.bagTag}</strong></div>
+        <div><span className="text-gray-500">Priority Flag:</span> <strong className="text-red-700">MEDICAL PRIORITY ✓</strong></div>
+        <div><span className="text-gray-500">Trace Status:</span> <strong>EXPEDITE – Est. resolution 24–72 hours</strong></div>
+        <div><span className="text-gray-500">Interim Expenses:</span> <strong className="text-green-700">Authorized — up to $100/day (5 days max)</strong></div>
+        <div><span className="text-gray-500">Medication Reimbursement:</span> <strong className="text-green-700">Eligible — pharmacy receipt + Rx required</strong></div>
+        <div><span className="text-gray-500">Submission Deadline:</span> <strong>Within 30 days</strong></div>
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      <div className="flex gap-2 flex-wrap">
+        <ActionButton label="Confirm & Send Reimbursement Form →" variant="primary" onClick={onAdvance} />
+        <ActionButton label="Escalate to Supervisor" onClick={() => setWrong(true)} />
+        <ActionButton label="Issue Travel Credit Instead" onClick={() => setWrong(true)} />
+      </div>
+    </div>
+  );
+}
+
+function VC3Communicate({ onReset }) {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">Case Updated — Communicate to Passenger</h2>
+      <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-amber-600">↩ Switch to Chat tab — say this to Alex:</p>
+        <p className="text-sm text-gray-800 leading-relaxed italic">
+          "Alex, I've pulled up your bag trace. Your bag is still in our system with EXPEDITE status — the last scan was in the gate area at Chicago O'Hare, and our team is actively working on it. The estimated resolution is 24 to 72 hours.
+          <br /><br />
+          Because your bag contains prescription medication, I've flagged the file as Medical Priority, which means your case gets daily check-ins from our baggage team. For your medication specifically, please go to any pharmacy, get an emergency supply, and save the receipt along with a copy of your prescription — we'll reimburse that fully.
+          <br /><br />
+          I've also authorized interim expense reimbursement of up to $100 per day for up to five days for essentials like clothing and toiletries. I'm sending a reimbursement form to your email right now. Is there anything else I can help you with?"
+        </p>
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
+        <p className="font-semibold text-gray-700 mb-1">Case Summary</p>
+        <p>Case #: <strong>BAG-2024-04412</strong> | Status: <span className="text-yellow-600 font-semibold">Open – EXPEDITE / Medical Priority</span></p>
+        <p>Resolution: Medical Priority flagged. Interim expenses authorized. Reimbursement form sent.</p>
+      </div>
+      <button onClick={onReset} className="text-sm text-blue-600 hover:underline">↺ Start New Case</button>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function WorkflowPortal({ mode, step, completed, onAdvance, onReset }) {
-  const steps = mode === "vc1" ? VC1_STEPS : VC2_STEPS;
+export default function WorkflowPortal({ scenario, step, completed, onAdvance, onReset }) {
+  const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS };
+  const steps = stepsMap[scenario] ?? VC2_STEPS;
 
   function advance() {
     onAdvance(steps[step].id);
@@ -682,16 +975,17 @@ export default function WorkflowPortal({ mode, step, completed, onAdvance, onRes
   const screenMap = {
     vc1: [VC1Lookup, VC1Bills, VC1Detail, VC1Policy, VC1Decision, VC1Communicate],
     vc2: [VC2Lookup, VC2Flight, VC2Rebook, VC2Policy, VC2Apply, VC2Communicate],
+    vc3: [VC3Lookup, VC3Claim, VC3Trace, VC3Policy, VC3Apply, VC3Communicate],
   };
 
-  const Screen = screenMap[mode][Math.min(step, screenMap[mode].length - 1)];
+  const Screen = (screenMap[scenario] ?? screenMap.vc2)[Math.min(step, 5)];
 
   return (
     <div className="flex-1 flex overflow-hidden">
       <StepSidebar steps={steps} current={step} completed={completed} />
       <div className="flex-1 overflow-y-auto p-6 bg-white">
         <div className="max-w-3xl mx-auto space-y-4">
-          <PromptBanner prompt={currentStepData.prompt} />
+          {currentStepData && <PromptBanner prompt={currentStepData.prompt} />}
           <Screen
             onAdvance={advance}
             onReset={onReset}

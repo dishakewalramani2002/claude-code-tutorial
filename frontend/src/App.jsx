@@ -5,24 +5,27 @@ import ChatWindow from "./components/ChatWindow";
 import ReportPage from "./components/ReportPage";
 
 export default function App() {
+  // sessionConfig: { scenario, persona, training, scenarioLabel, personaLabel, personaEmoji }
   const [view, setView] = useState("landing"); // "landing" | "mode-select" | "chat" | "report"
-  const [mode, setMode] = useState(null);
+  const [sessionConfig, setSessionConfig] = useState(null);
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
 
-  function handleModeSelect(selectedMode) {
-    setMode(selectedMode);
+  function handleModeSelect(config) {
+    setSessionConfig(config);
     setView("chat");
   }
 
   async function handleEndSession(messages) {
     setReportLoading(true);
     setReportError(null);
-    setView("report"); // show loading state immediately
+    setView("report");
     try {
       const response = await axios.post("http://localhost:8000/report", {
-        mode,
+        scenario: sessionConfig.scenario,
+        persona: sessionConfig.persona,
+        training: sessionConfig.training,
         history: messages,
       });
       setReport(response.data);
@@ -34,7 +37,7 @@ export default function App() {
   }
 
   function handleNewSession() {
-    setMode(null);
+    setSessionConfig(null);
     setReport(null);
     setReportError(null);
     setView("landing");
@@ -89,12 +92,18 @@ export default function App() {
         </div>
       );
     }
-    return <ReportPage report={report} mode={mode} onNewSession={handleNewSession} />;
+    return (
+      <ReportPage
+        report={report}
+        sessionConfig={sessionConfig}
+        onNewSession={handleNewSession}
+      />
+    );
   }
 
   return (
     <ChatWindow
-      mode={mode}
+      sessionConfig={sessionConfig}
       onEndSession={handleEndSession}
     />
   );

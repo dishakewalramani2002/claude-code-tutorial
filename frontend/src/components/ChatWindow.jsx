@@ -6,12 +6,15 @@ import WorkflowPortal from "./WorkflowPortal";
 
 const API_URL = "http://localhost:8000/chat";
 
-const MODE_LABELS = {
-  vc1: "Training — Health Insurance Billing",
-  vc2: "Evaluation — Flight Cancellation",
+const SCENARIO_LABELS = {
+  vc1: "Health Insurance Billing",
+  vc2: "Flight Cancellation",
+  vc3: "Lost Baggage",
 };
 
-export default function ChatWindow({ mode, onEndSession }) {
+export default function ChatWindow({ sessionConfig, onEndSession }) {
+  const { scenario, persona, training, scenarioLabel, personaEmoji, personaLabel } = sessionConfig;
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +37,11 @@ export default function ChatWindow({ mode, onEndSession }) {
     async function fetchOpener() {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:8000/start/${mode}`);
+        const response = await axios.post("http://localhost:8000/start", {
+          scenario,
+          persona,
+          training,
+        });
         setMessages([{ role: "assistant", content: response.data.customer_response }]);
       } catch {
         setError("Failed to start session. Make sure the backend is running on port 8000.");
@@ -43,7 +50,7 @@ export default function ChatWindow({ mode, onEndSession }) {
       }
     }
     fetchOpener();
-  }, [mode]);
+  }, [scenario, persona, training]);
 
   async function sendMessage() {
     const trimmed = input.trim();
@@ -57,7 +64,9 @@ export default function ChatWindow({ mode, onEndSession }) {
 
     try {
       const response = await axios.post(API_URL, {
-        mode,
+        scenario,
+        persona,
+        training,
         message: trimmed,
         history: messages,
       });
@@ -87,7 +96,8 @@ export default function ChatWindow({ mode, onEndSession }) {
     }
   }
 
-  const isTraining = mode === "vc1";
+  const modeLabel = training ? "Training" : "Evaluation";
+  const headerLabel = `${modeLabel} — ${scenarioLabel || SCENARIO_LABELS[scenario]}`;
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
@@ -96,7 +106,10 @@ export default function ChatWindow({ mode, onEndSession }) {
         <div className="flex items-center gap-6">
           <div>
             <span className="font-semibold text-gray-800">CSR Simulator</span>
-            <span className="ml-3 text-sm text-gray-400">{MODE_LABELS[mode]}</span>
+            <span className="ml-3 text-sm text-gray-400">{headerLabel}</span>
+            <span className="ml-2 text-sm text-gray-400">
+              · {personaEmoji} {personaLabel}
+            </span>
           </div>
           {/* Tab switcher */}
           <div className="flex">
@@ -128,7 +141,7 @@ export default function ChatWindow({ mode, onEndSession }) {
       {/* Portal tab — always mounted, hidden when not active so state persists */}
       <div className={`flex-1 overflow-hidden ${activeTab === "portal" ? "flex flex-col" : "hidden"}`}>
         <WorkflowPortal
-          mode={mode}
+          scenario={scenario}
           step={portalStep}
           completed={portalCompleted}
           onAdvance={(stepId) => {
@@ -140,7 +153,7 @@ export default function ChatWindow({ mode, onEndSession }) {
       </div>
 
       {/* Chat tab — always mounted, hidden when not active so state persists */}
-      <div className={`flex-1 flex overflow-hidden ${activeTab === "chat" ? "" : "hidden"} ${isTraining ? "flex-row" : ""}`}>
+      <div className={`flex-1 flex overflow-hidden ${activeTab === "chat" ? "" : "hidden"} ${training ? "flex-row" : ""}`}>
         {/* Chat area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
@@ -198,7 +211,7 @@ export default function ChatWindow({ mode, onEndSession }) {
         </div>
 
         {/* Feedback Sidebar (training only) */}
-        {isTraining && (
+        {training && (
           <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0">
             <FeedbackPanel feedback={activeFeedback} />
           </div>
