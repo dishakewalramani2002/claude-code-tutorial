@@ -961,9 +961,380 @@ function VC3Communicate({ onReset }) {
   );
 }
 
+// ─── FINANCE DATA ─────────────────────────────────────────────────────────────
+const LOAN_DELAY_CUSTOMER = {
+  name: "Alex Chen",
+  loanId: "LN-2024-00892",
+  type: "Personal Loan",
+  amount: "$15,000",
+  appliedDate: "2026-03-10",
+  phone: "(415) 555-0172",
+  status: "PENDING – Under Review",
+};
+
+const LOAN_DELAY_STATUS = {
+  stage: "Underwriting Review",
+  submittedDate: "2026-03-10",
+  expectedDate: "2026-03-17 (original)",
+  currentDelay: "11 days overdue",
+  delayReason: "Additional income verification required",
+  assignedTo: "Underwriting Team B",
+  nextStep: "Income documents resubmission",
+};
+
+const LOAN_DELAY_POLICY = `LOAN PROCESSING POLICY – Personal Loans
+
+Standard Processing Timeline
+  • Application to decision:     5–7 business days (standard)
+  • Document verification:       2–3 business days
+  • Disbursement after approval: 1–2 business days
+
+Delay Causes & Actions
+  ┌──────────────────────────────────────────────────┐
+  │  Income Verification:  Request updated documents  │
+  │  Credit Flag:          Escalate to Risk Team      │
+  │  System Hold:          Escalate to Ops Support    │
+  │  Missing Documents:    Send document request      │
+  └──────────────────────────────────────────────────┘
+
+Customer Communication Standard
+  • Delays > 3 business days: proactive outreach required
+  • Provide updated ETA and reason at every contact
+  • Document all customer contacts in case notes`;
+
+const LOAN_DELAY_STEPS = [
+  { id: "lookup", label: "Loan Lookup", icon: "🔍",
+    prompt: { type: "customer", text: "Ask the customer for their loan ID or customer ID before searching." } },
+  { id: "status", label: "Application Status", icon: "📄",
+    prompt: { type: "action", text: "Review the loan application status and timeline. Click the advance button to see the full record." } },
+  { id: "delay", label: "Delay Reason", icon: "⏱️",
+    prompt: { type: "action", text: "Note the reason for the delay. Then select the correct next action below." } },
+  { id: "resolution", label: "Resolution Options", icon: "📋",
+    prompt: { type: "action", text: "Review the processing policy. Select the appropriate resolution for this delay." } },
+  { id: "apply", label: "Apply Actions", icon: "✅",
+    prompt: { type: "action", text: "Confirm the action you will take. Add a case note, then click 'Confirm & Apply'." } },
+  { id: "communicate", label: "Communicate to Customer", icon: "💬",
+    prompt: { type: "customer", text: "Return to the customer tab and deliver the update below." } },
+];
+
+const REFUND_REQUEST_CUSTOMER = {
+  name: "Morgan Riley",
+  transactionId: "TXN-2024-05521",
+  amount: "$340.00",
+  date: "2026-03-25",
+  merchant: "Unknown Merchant",
+  phone: "(628) 555-0134",
+  status: "FAILED – Pending Reversal",
+};
+
+const REFUND_REQUEST_DETAILS = {
+  type: "Debit Card Payment",
+  processorRef: "PRO-88214",
+  failureCode: "GATEWAY_TIMEOUT",
+  merchantResponse: "Transaction not received",
+  daysSince: "3 days",
+  refundEligibility: "ELIGIBLE – Automatic Reversal",
+  estimatedReturn: "1–3 business days",
+};
+
+const REFUND_REQUEST_POLICY = `FAILED TRANSACTION REFUND POLICY
+
+Automatic Reversal Eligibility
+  • Gateway timeout / failed authorizations:  ELIGIBLE ✓
+  • Duplicate charges:                         ELIGIBLE ✓
+  • Merchant disputes (no failure code):       Requires investigation
+
+Processing Timelines
+  ┌─────────────────────────────────────────────────────┐
+  │  Automatic reversal:         1–3 business days       │
+  │  Manual refund initiation:   3–5 business days       │
+  │  Provisional credit:         Same day (if eligible)  │
+  └─────────────────────────────────────────────────────┘
+
+Provisional Credit
+  • Available for transactions > $100 pending > 2 business days
+  • Applied while investigation is in progress
+  • Reversed if merchant confirms transaction was successful`;
+
+const REFUND_REQUEST_STEPS = [
+  { id: "lookup", label: "Transaction Lookup", icon: "🔍",
+    prompt: { type: "customer", text: "Ask the customer for their transaction ID or the date and amount of the failed payment." } },
+  { id: "details", label: "Payment Details", icon: "💳",
+    prompt: { type: "action", text: "Review the transaction record and click the advance button to confirm the failure code." } },
+  { id: "eligibility", label: "Refund Eligibility", icon: "🧾",
+    prompt: { type: "action", text: "Check the failure code against eligibility rules. Confirm the refund type that applies." } },
+  { id: "options", label: "Refund Options", icon: "📋",
+    prompt: { type: "action", text: "Review the refund policy. Select the correct option for this transaction type." } },
+  { id: "process", label: "Process Refund", icon: "✅",
+    prompt: { type: "action", text: "Confirm the refund details. Add a case note, then click 'Initiate Refund'." } },
+  { id: "communicate", label: "Communicate to Customer", icon: "💬",
+    prompt: { type: "customer", text: "Return to the customer tab and deliver the update below." } },
+];
+
+// Screen-level content configs indexed by step (0–5)
+const FIN_SCREEN_CONFIGS = {
+  loan_delay: [
+    // 0 – Loan Lookup
+    { title: "Loan Application Search", placeholder: "Enter loan ID or customer ID...", searchLabel: "Search",
+      wrongButtons: ["New Loan Application", "Close Application"],
+      customer: LOAN_DELAY_CUSTOMER, advanceLabel: "Check Processing Status →" },
+    // 1 – Application Status
+    { title: "Application Status", data: LOAN_DELAY_STATUS, advanceLabel: "View Delay Details →",
+      wrongButtons: ["Approve Immediately", "Transfer to Another Branch"] },
+    // 2 – Delay Reason
+    { title: "Delay Reason", statusBadge: "DELAYED", badgeGood: false,
+      statusText: "Income verification documents are required. Customer must resubmit pay stubs or recent bank statements before underwriting can proceed.",
+      action: "Request Documents", advanceLabel: "Request Documents →",
+      wrongButtons: ["Deny Application", "Escalate to Legal"] },
+    // 3 – Resolution Options
+    { title: "Resolution Options", policy: LOAN_DELAY_POLICY,
+      correctLabel: "✓ Request Income Documents + Set 5-Day Deadline",
+      wrongButtons: ["Deny Application – Income Unverified", "Escalate to Risk Team", "Place on Hold Indefinitely"],
+      correctMessage: "Correct. Request updated income documents and provide a 5-day resubmission deadline." },
+    // 4 – Apply Actions
+    { title: "Apply Actions",
+      summary: [
+        ["Customer", "Alex Chen"], ["Loan ID", "LN-2024-00892"],
+        ["Action", "Document Request Issued"], ["Deadline", "5 business days from today"],
+        ["Status", "Awaiting income verification resubmission"], ["Assigned", "Underwriting Team B"],
+      ],
+      wrongButtons: ["Escalate to Supervisor", "Cancel Application"],
+      advanceLabel: "Confirm & Apply →",
+      notePlaceholder: "e.g. Customer called re: loan delay. Income verification required. Document request sent with 5-day deadline. ETA 3–5 days post-submission." },
+    // 5 – Communicate
+    { title: "Case Updated — Communicate to Customer", customerName: "Alex",
+      script: `"Alex, I've looked into your loan application. It's currently in our underwriting review stage, and the delay is due to an additional income verification step required for your loan amount — this is a standard part of the process, not a rejection.\n\nI've just sent a document request to your email. Once we receive your updated income documents, our team will aim to complete the review within 3 to 5 business days.\n\nIs there anything else I can help clarify for you today?"`,
+      caseRef: "LOAN-2024-00892", caseStatus: "Open – Awaiting Documents",
+      resolution: "Document request issued. 5-day deadline set. Customer informed of expected timeline." },
+  ],
+  refund_request: [
+    // 0 – Transaction Lookup
+    { title: "Transaction Search", placeholder: "Enter transaction ID or order ID...", searchLabel: "Search",
+      wrongButtons: ["File Dispute Claim", "Block Card"],
+      customer: REFUND_REQUEST_CUSTOMER, advanceLabel: "View Transaction Details →" },
+    // 1 – Payment Details
+    { title: "Payment Details", data: REFUND_REQUEST_DETAILS, advanceLabel: "Check Eligibility →",
+      wrongButtons: ["Chargeback to Merchant", "Flag for Fraud Investigation"] },
+    // 2 – Refund Eligibility
+    { title: "Refund Eligibility Check", statusBadge: "ELIGIBLE", badgeGood: true,
+      statusText: "Transaction failure code GATEWAY_TIMEOUT qualifies for automatic reversal. Merchant has confirmed the transaction was not received on their end.",
+      action: "Check Eligibility", advanceLabel: "Check Eligibility →",
+      wrongButtons: ["Deny Refund – Dispute Required", "Escalate to Fraud Team"] },
+    // 3 – Refund Options
+    { title: "Refund Options", policy: REFUND_REQUEST_POLICY,
+      correctLabel: "✓ Automatic Reversal + Provisional Credit",
+      wrongButtons: ["Manual Refund Only (3–5 days)", "Deny – Insufficient Evidence", "Escalate to Merchant Relations"],
+      correctMessage: "Correct. Issue provisional credit today and initiate the automatic reversal process." },
+    // 4 – Process Refund
+    { title: "Process Refund",
+      summary: [
+        ["Customer", "Morgan Riley"], ["Transaction ID", "TXN-2024-05521"],
+        ["Refund Amount", "$340.00"], ["Method", "Automatic Reversal + Provisional Credit"],
+        ["Provisional Credit", "Applied today"], ["Full Reversal ETA", "1–3 business days"],
+      ],
+      wrongButtons: ["Issue Credit Only", "Escalate to Supervisor"],
+      advanceLabel: "Initiate Refund →",
+      notePlaceholder: "e.g. Customer called re: failed $340 transaction on 03/25. GATEWAY_TIMEOUT confirmed. Automatic reversal initiated. Provisional credit of $340 applied today." },
+    // 5 – Communicate
+    { title: "Case Resolved — Communicate to Customer", customerName: "Morgan",
+      script: `"Morgan, I've reviewed your account and confirmed that the $340 transaction on March 25th failed on our end — the failure code shows a gateway timeout, which means the merchant never actually received the funds.\n\nI've initiated an automatic reversal, which will return the $340 to your account within 1 to 3 business days. I've also applied a provisional credit of $340 to your account effective today so you have access to those funds right away.\n\nIs there anything else I can help you with?"`,
+      caseRef: "REFUND-2024-05521", caseStatus: "Closed",
+      resolution: "Automatic reversal initiated. Provisional credit of $340 applied. Customer informed." },
+  ],
+};
+
+// ─── GENERIC FINANCE SCREENS ─────────────────────────────────────────────────
+function FinLookup({ config, onAdvance }) {
+  const [query, setQuery] = useState("");
+  const [found, setFound] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder={config.placeholder}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+        />
+        <ActionButton label={config.searchLabel} variant="primary" onClick={() => query.trim() && setFound(true)} />
+      </div>
+      <div className="flex gap-2">
+        {config.wrongButtons.map(label => (
+          <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
+        ))}
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      {found && (
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">Record Found</div>
+          <div className="p-4 grid grid-cols-2 gap-3 text-sm">
+            {Object.entries(config.customer).map(([k, v]) => (
+              <div key={k}>
+                <span className="text-gray-400 capitalize">{k.replace(/([A-Z])/g, ' $1')}: </span>
+                <span className={`font-medium ${k === "status" ? "text-red-600" : "text-gray-800"}`}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
+            <ActionButton label={config.advanceLabel} variant="primary" onClick={onAdvance} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinDetails({ config, onAdvance }) {
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 text-sm space-y-2">
+        {Object.entries(config.data).map(([k, v]) => (
+          <div key={k}>
+            <span className="text-gray-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}: </span>
+            <strong>{v}</strong>
+          </div>
+        ))}
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      <div className="flex gap-2 flex-wrap">
+        <ActionButton label={config.advanceLabel} variant="primary" onClick={onAdvance} />
+        {config.wrongButtons.map(label => (
+          <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FinStatus({ config, onAdvance }) {
+  const [done, setDone] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <div className={`border rounded-xl p-4 text-sm space-y-2 ${config.badgeGood ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+        <div className={`flex items-center gap-2 font-bold text-base ${config.badgeGood ? "text-green-700" : "text-amber-700"}`}>
+          <span>{config.badgeGood ? "✓" : "⚠"}</span> {config.statusBadge}
+        </div>
+        <p className={config.badgeGood ? "text-green-800" : "text-amber-800"}>{config.statusText}</p>
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      <div className="flex gap-2 flex-wrap">
+        <ActionButton
+          label={done ? `✓ ${config.action} Sent` : config.advanceLabel}
+          variant={done ? "primary" : "default"}
+          onClick={() => { setDone(true); setWrong(false); }}
+        />
+        {config.wrongButtons.map(label => (
+          <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
+        ))}
+      </div>
+      {done && (
+        <div className="bg-green-50 border border-green-300 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-green-800">Done. Proceed to review available options.</p>
+          <ActionButton label="Review Options →" variant="primary" onClick={onAdvance} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinPolicy({ config, onAdvance }) {
+  const [decision, setDecision] = useState(null);
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <pre className="text-sm bg-gray-50 border border-gray-200 rounded-xl p-4 whitespace-pre-wrap font-mono leading-relaxed">
+        {config.policy}
+      </pre>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Select what applies:</p>
+        <div className="flex gap-2 flex-wrap">
+          <ActionButton
+            label={config.correctLabel}
+            variant={decision === "correct" ? "primary" : "default"}
+            onClick={() => { setDecision("correct"); setWrong(false); }}
+          />
+          {config.wrongButtons.map(label => (
+            <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
+          ))}
+        </div>
+        {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      </div>
+      {decision === "correct" && (
+        <div className="bg-green-50 border border-green-300 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-green-800">{config.correctMessage}</p>
+          <ActionButton label="Apply & Confirm →" variant="primary" onClick={onAdvance} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinApply({ config, onAdvance }) {
+  const [note, setNote] = useState("");
+  const [wrong, setWrong] = useState(false);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 text-sm space-y-2">
+        {config.summary.map(([k, v]) => (
+          <div key={k}><span className="text-gray-500">{k}:</span> <strong>{v}</strong></div>
+        ))}
+      </div>
+      <div>
+        <label className="text-sm font-medium text-gray-700 block mb-1">Case Note (required)</label>
+        <textarea
+          rows={3}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder={config.notePlaceholder}
+          value={note}
+          onChange={e => setNote(e.target.value)}
+        />
+      </div>
+      {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      <div className="flex gap-2">
+        <ActionButton
+          label={config.advanceLabel}
+          variant="primary"
+          onClick={() => note.trim() ? onAdvance() : setWrong(true)}
+        />
+        {config.wrongButtons.map(label => (
+          <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
+        ))}
+      </div>
+      {!note.trim() && wrong && <p className="text-xs text-red-500">Please enter a case note before confirming.</p>}
+    </div>
+  );
+}
+
+function FinCommunicate({ config, onReset }) {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
+      <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-amber-600">↩ Switch to Chat tab — say this to {config.customerName}:</p>
+        <p className="text-sm text-gray-800 leading-relaxed italic" style={{ whiteSpace: "pre-line" }}>{config.script}</p>
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
+        <p className="font-semibold text-gray-700 mb-1">Case Summary</p>
+        <p>Case #: <strong>{config.caseRef}</strong> | Status: <span className={`font-semibold ${config.caseStatus === "Closed" ? "text-green-700" : "text-yellow-600"}`}>{config.caseStatus}</span></p>
+        <p>Resolution: {config.resolution}</p>
+      </div>
+      <button onClick={onReset} className="text-sm text-blue-600 hover:underline">↺ Start New Case</button>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function WorkflowPortal({ scenario, step, completed, onAdvance, onReset }) {
-  const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS };
+  const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
 
   function advance() {
@@ -972,10 +1343,14 @@ export default function WorkflowPortal({ scenario, step, completed, onAdvance, o
 
   const currentStepData = steps[step];
 
+  const finConfig = FIN_SCREEN_CONFIGS[scenario]?.[Math.min(step, 5)];
+
   const screenMap = {
     vc1: [VC1Lookup, VC1Bills, VC1Detail, VC1Policy, VC1Decision, VC1Communicate],
     vc2: [VC2Lookup, VC2Flight, VC2Rebook, VC2Policy, VC2Apply, VC2Communicate],
     vc3: [VC3Lookup, VC3Claim, VC3Trace, VC3Policy, VC3Apply, VC3Communicate],
+    loan_delay: [FinLookup, FinDetails, FinStatus, FinPolicy, FinApply, FinCommunicate],
+    refund_request: [FinLookup, FinDetails, FinStatus, FinPolicy, FinApply, FinCommunicate],
   };
 
   const Screen = (screenMap[scenario] ?? screenMap.vc2)[Math.min(step, 5)];
@@ -989,6 +1364,7 @@ export default function WorkflowPortal({ scenario, step, completed, onAdvance, o
           <Screen
             onAdvance={advance}
             onReset={onReset}
+            config={finConfig}
           />
         </div>
       </div>

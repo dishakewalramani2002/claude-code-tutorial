@@ -7,20 +7,20 @@ app = FastAPI(title="CSR Training Simulator API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-VALID_SCENARIOS = {"vc1", "vc2", "vc3"}
+VALID_SCENARIOS = {"vc1", "vc2", "vc3", "loan_delay", "refund_request"}
 VALID_PERSONAS = {"angry", "confused", "demanding", "anxious"}
 
 
 class ChatRequest(BaseModel):
-    scenario: str        # "vc1" | "vc2" | "vc3"
-    persona: str         # "angry" | "confused" | "demanding" | "anxious"
-    training: bool       # True = training mode with real-time feedback
+    scenario: str
+    persona: str
+    training: bool
     message: str
     history: list[dict]
 
