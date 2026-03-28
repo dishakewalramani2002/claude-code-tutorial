@@ -24,9 +24,19 @@ const DOMAINS = [
     id: "finance",
     label: "Finance",
     icon: "💰",
-    available: false,
-    scenarios: [],
-    comingSoon: true,
+    available: true,
+    scenarios: [
+      {
+        id: "loan_delay",
+        label: "Loan Delay",
+        description: "Assist a customer whose loan approval or disbursement has been delayed. Handle frustration and provide clear next steps.",
+      },
+      {
+        id: "refund_request",
+        label: "Refund Request",
+        description: "Help a customer requesting a refund for a failed or incorrect financial transaction. Address urgency and set expectations.",
+      },
+    ],
   },
   {
     id: "services",

@@ -129,6 +129,8 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         "vc1": "Begin the call. Introduce yourself and state your complaint about the billing issue.",
         "vc2": "Begin the conversation. Introduce yourself and explain that your flight was just cancelled.",
         "vc3": "Begin the conversation. Introduce yourself and explain that your bag has been missing for two days and you need an update.",
+        "loan_delay": "Begin the call. Introduce yourself and explain that your loan approval or disbursement has been delayed and you need to know what is happening.",
+        "refund_request": "Begin the call. Introduce yourself and explain that you need a refund for a failed or incorrect financial transaction.",
     }
     opener = openers[scenario]
 
@@ -156,6 +158,8 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
         "vc1": "kb_vc1_prompt.txt",
         "vc2": "kb_vc2_prompt.txt",
         "vc3": "kb_vc3_prompt.txt",
+        "loan_delay": "kb_loan_delay_prompt.txt",
+        "refund_request": "kb_refund_request_prompt.txt",
     }
     system_prompt = load_prompt(kb_prompts[scenario])
 
@@ -193,6 +197,8 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
         "vc1": "Health Insurance Billing",
         "vc2": "Flight Cancellation",
         "vc3": "Lost Baggage",
+        "loan_delay": "Loan Delay",
+        "refund_request": "Refund Request",
     }
     domain = domain_labels.get(scenario, scenario.upper())
     mode_label = "Training" if training else "Evaluation"
