@@ -1,8 +1,9 @@
 import { useRef } from "react";
 
-const MODE_LABELS = {
-  vc1: "Training — Health Insurance Billing",
-  vc2: "Evaluation — Flight Cancellation",
+const SCENARIO_LABELS = {
+  vc1: "Health Insurance Billing",
+  vc2: "Flight Cancellation",
+  vc3: "Lost Baggage",
 };
 
 function ScoreBar({ label, score }) {
@@ -47,7 +48,10 @@ function Badge({ value }) {
   );
 }
 
-export default function ReportPage({ report, mode, onNewSession }) {
+export default function ReportPage({ report, sessionConfig, onNewSession }) {
+  const { scenario, persona, training, personaEmoji, personaLabel } = sessionConfig ?? {};
+  const modeLabel = training ? "Training" : "Evaluation";
+  const sessionLabel = `${modeLabel} — ${SCENARIO_LABELS[scenario] ?? scenario} · ${personaEmoji ?? ""} ${personaLabel ?? ""}`.trim();
   const printRef = useRef();
 
   function handleDownload() {
@@ -75,7 +79,7 @@ export default function ReportPage({ report, mode, onNewSession }) {
       <div className="no-print bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between sticky top-0 z-10">
         <div>
           <span className="font-semibold text-gray-800">Session Report</span>
-          <span className="ml-3 text-sm text-gray-400">{MODE_LABELS[mode]}</span>
+          <span className="ml-3 text-sm text-gray-400">{sessionLabel}</span>
         </div>
         <div className="flex gap-3">
           <button
@@ -100,7 +104,7 @@ export default function ReportPage({ report, mode, onNewSession }) {
           {/* Title */}
           <div className="text-center pb-4">
             <h1 className="text-3xl font-bold text-gray-900">Performance Report</h1>
-            <p className="text-gray-500 mt-1">{MODE_LABELS[mode]}</p>
+            <p className="text-gray-500 mt-1">{sessionLabel}</p>
           </div>
 
           {/* ── 1. Customer Profile ── */}

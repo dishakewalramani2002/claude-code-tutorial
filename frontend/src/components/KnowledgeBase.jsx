@@ -16,6 +16,19 @@ const SUGGESTIONS = {
     "What are DOT rules for cancelled flight refunds?",
     "How do I handle a missed connecting flight due to cancellation?",
   ],
+  vc3: [
+    "What interim expenses can a passenger claim for a missing bag?",
+    "How do I flag a bag as Medical Priority in WorldTracer?",
+    "What is the DOT liability limit for lost domestic baggage?",
+    "How long before a delayed bag becomes a lost bag claim?",
+    "Can a passenger claim for a laptop in an interim expense reimbursement?",
+  ],
+};
+
+const DOMAIN_LABELS = {
+  vc1: "Health Insurance",
+  vc2: "Airline – Flight Cancellation",
+  vc3: "Airline – Lost Baggage",
 };
 
 export default function KnowledgeBase({ mode }) {
@@ -32,7 +45,7 @@ export default function KnowledgeBase({ mode }) {
     setError(null);
     try {
       const response = await axios.post("http://localhost:8000/lookup", {
-        mode,
+        scenario: mode,
         query: trimmed,
       });
       setResult({ query: trimmed, answer: response.data.answer });
@@ -48,7 +61,7 @@ export default function KnowledgeBase({ mode }) {
     search(s);
   }
 
-  const domainLabel = mode === "vc1" ? "Health Insurance" : "Airline";
+  const domainLabel = DOMAIN_LABELS[mode] ?? "Knowledge Base";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">

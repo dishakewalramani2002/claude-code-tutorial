@@ -13,11 +13,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+VALID_SCENARIOS = {"vc1", "vc2", "vc3"}
+VALID_PERSONAS = {"angry", "confused", "demanding", "anxious"}
+
 
 class ChatRequest(BaseModel):
-    mode: str           # "vc1" or "vc2"
-    message: str        # latest CSR message
-    history: list[dict] # prior turns: [{role, content}, ...]
+    scenario: str        # "vc1" | "vc2" | "vc3"
+    persona: str         # "angry" | "confused" | "demanding" | "anxious"
+    training: bool       # True = training mode with real-time feedback
+    message: str
+    history: list[dict]
 
 
 class FeedbackModel(BaseModel):
@@ -32,15 +37,35 @@ class ChatResponse(BaseModel):
     feedback: FeedbackModel | None = None
 
 
+class StartRequest(BaseModel):
+    scenario: str
+    persona: str
+    training: bool
+
+
+@app.post("/start", response_model=ChatResponse)
+async def start(request: StartRequest):
+    if request.scenario not in VALID_SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
+    if request.persona not in VALID_PERSONAS:
+        raise HTTPException(status_code=400, detail=f"persona must be one of {VALID_PERSONAS}")
+    result = start_conversation(request.scenario, request.persona, request.training)
+    return ChatResponse(**result)
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    if request.mode not in ("vc1", "vc2"):
-        raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
+    if request.scenario not in VALID_SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
+    if request.persona not in VALID_PERSONAS:
+        raise HTTPException(status_code=400, detail=f"persona must be one of {VALID_PERSONAS}")
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="message cannot be empty")
 
     result = call_llm(
-        mode=request.mode,
+        scenario=request.scenario,
+        persona=request.persona,
+        training=request.training,
         message=request.message,
         history=request.history,
     )
@@ -48,38 +73,37 @@ async def chat(request: ChatRequest):
 
 
 class LookupRequest(BaseModel):
-    mode: str
+    scenario: str
     query: str
 
 
 @app.post("/lookup")
 async def lookup(request: LookupRequest):
-    if request.mode not in ("vc1", "vc2"):
-        raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
+    if request.scenario not in VALID_SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="query cannot be empty")
-    answer = lookup_knowledge_base(request.mode, request.query)
+    answer = lookup_knowledge_base(request.scenario, request.query)
     return {"answer": answer}
 
 
-@app.get("/start/{mode}", response_model=ChatResponse)
-async def start(mode: str):
-    if mode not in ("vc1", "vc2"):
-        raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
-    result = start_conversation(mode)
-    return ChatResponse(**result)
-
-
 class ReportRequest(BaseModel):
-    mode: str
-    history: list[dict]  # full conversation including feedback fields
+    scenario: str
+    persona: str
+    training: bool
+    history: list[dict]
 
 
 @app.post("/report")
 async def report(request: ReportRequest):
-    if request.mode not in ("vc1", "vc2"):
-        raise HTTPException(status_code=400, detail="mode must be 'vc1' or 'vc2'")
-    result = generate_report(mode=request.mode, history=request.history)
+    if request.scenario not in VALID_SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
+    result = generate_report(
+        scenario=request.scenario,
+        persona=request.persona,
+        training=request.training,
+        history=request.history,
+    )
     return result
 
 
