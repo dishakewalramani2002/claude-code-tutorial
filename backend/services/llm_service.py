@@ -177,6 +177,16 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
 
 def generate_report(scenario: str, persona: str, training: bool, history: list[dict]) -> dict:
     """Generate a full session performance report from the conversation history."""
+    if not history:
+        return {
+            "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "Not enough conversation data to generate report", "context": ""},
+            "success_criteria": [],
+            "performance": {"empathy_score": 0, "transparency_score": 0, "ownership_score": 0, "overall_score": 0, "strengths": [], "critical_mistakes": []},
+            "turn_feedback": [],
+            "key_learnings": [],
+            "recommendations": ["Complete at least one full exchange before ending the session."],
+        }
+
     system_prompt = load_prompt("report_prompt.txt")
 
     transcript_lines = []
@@ -220,12 +230,21 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
     )
 
     raw = response.choices[0].message.content.strip()
-    raw = re.sub(r"^```(?:json)?\s*", "", raw)
-    raw = re.sub(r"\s*```$", "", raw)
+    print("\n--- RAW REPORT OUTPUT ---\n", raw, "\n---\n")
+
+    # Strip all code fences (handles ```json, ``` anywhere in the output)
+    raw = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE).strip()
+
+    # Extract the outermost JSON object even if the LLM added surrounding text
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        raw = raw[start:end + 1]
 
     try:
         return json.loads(raw)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error in generate_report: {e}\nRaw output was:\n{raw}")
         return {
             "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "N/A", "context": ""},
             "success_criteria": [],

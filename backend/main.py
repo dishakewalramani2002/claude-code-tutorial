@@ -98,6 +98,8 @@ class ReportRequest(BaseModel):
 async def report(request: ReportRequest):
     if request.scenario not in VALID_SCENARIOS:
         raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
+    print(f"REPORT HISTORY: {request.history}")
+    print(f"NUM TURNS: {len(request.history)}")
     result = generate_report(
         scenario=request.scenario,
         persona=request.persona,
