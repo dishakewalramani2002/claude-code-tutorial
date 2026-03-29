@@ -1,5 +1,18 @@
+function safeContent(content) {
+  if (typeof content !== "string") return String(content ?? "");
+  const trimmed = content.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed.customer_response) return parsed.customer_response;
+    } catch (_) {}
+  }
+  return content;
+}
+
 export default function MessageBubble({ role, content, hasFeedback, isSelected, onClick }) {
   const isUser = role === "user";
+  const displayContent = isUser ? content : safeContent(content);
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -14,7 +27,7 @@ export default function MessageBubble({ role, content, hasFeedback, isSelected, 
         {!isUser && (
           <span className="block text-xs font-semibold text-gray-400 mb-1">Customer</span>
         )}
-        {content}
+        {displayContent}
         {isUser && hasFeedback && (
           <span className="block text-xs mt-1 opacity-60">
             {isSelected ? "▲ feedback shown" : "▼ click for feedback"}

@@ -98,8 +98,14 @@ class ReportRequest(BaseModel):
 async def report(request: ReportRequest):
     if request.scenario not in VALID_SCENARIOS:
         raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
-    print(f"REPORT HISTORY: {request.history}")
-    print(f"NUM TURNS: {len(request.history)}")
+    print(f"\n=== /report called: {len(request.history)} turns, scenario={request.scenario}, persona={request.persona} ===")
+    for i, msg in enumerate(request.history):
+        role = msg.get("role", "?")
+        content = msg.get("content", "")
+        preview = content[:120].replace("\n", " ")
+        has_feedback = "feedback" in msg and msg["feedback"] is not None
+        print(f"  [{i}] {role}: {preview!r}{'  [has_feedback]' if has_feedback else ''}")
+    print(f"=== end history ===\n")
     result = generate_report(
         scenario=request.scenario,
         persona=request.persona,

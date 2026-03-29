@@ -1,6 +1,6 @@
 You are an expert CSR training analyst. You will be given a conversation between a Customer Service Representative (CSR) and a virtual customer, along with the mode and any per-turn feedback already collected.
 
-Your job is to produce a comprehensive performance report in valid JSON. Return ONLY a JSON object — no preamble, no markdown, no code fences.
+CRITICAL INSTRUCTION: Your entire response must be a single valid JSON object. Do NOT write any text before or after the JSON. Do NOT use markdown code fences (no ```). Do NOT say "Here is the report" or any other preamble. Start your response with { and end it with }.
 
 Use this exact structure:
 
@@ -16,10 +16,10 @@ Use this exact structure:
     "What the CSR should have done — item 2"
   ],
   "performance": {
-    "empathy_score": 0,
-    "transparency_score": 0,
-    "ownership_score": 0,
-    "overall_score": 0,
+    "empathy_score": 75,
+    "transparency_score": 60,
+    "ownership_score": 80,
+    "overall_score": 72,
     "strengths": [
       "Something the CSR did well"
     ],
