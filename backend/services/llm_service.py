@@ -33,24 +33,32 @@ PERSONA_STYLES = {
     ),
 }
 
-FEEDBACK_BLOCK_INSTRUCTIONS = """
+RESPONSE_FORMAT_PLAIN = """
 
-After each of your responses, you MUST append a JSON block on a new line that evaluates the CSR trainee's most recent message. Use this exact format:
-
-###FEEDBACK###
+RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
 {
-  "empathy": true or false,
-  "transparency": true or false,
-  "ownership": true or false,
-  "suggestion": "One concrete sentence on what the trainee could do better or did well."
+  "customer_response": "Your in-character reply here (2-4 sentences).",
+  "feedback": null
+}"""
+
+RESPONSE_FORMAT_TRAINING = """
+
+RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
+{
+  "customer_response": "Your in-character reply here (2-4 sentences).",
+  "feedback": {
+    "empathy": true,
+    "transparency": false,
+    "ownership": true,
+    "suggestion": "One concrete sentence on what the trainee could do better or did well."
+  }
 }
-###END###
 
-Empathy: Did the trainee acknowledge your feelings or frustration in any way, even briefly? Give credit for genuine-sounding concern.
-Transparency: Did the trainee give some explanation or hint at next steps, even if incomplete? Give credit for partial clarity.
-Ownership: Did the trainee express any willingness to help or follow up, even without a full commitment? Give credit for effort.
-
-Keep your in-character customer dialogue to 2-4 sentences. Begin each reply with your in-character customer dialogue, then the feedback block."""
+Feedback evaluation rules — assess the CSR's most recent message:
+- empathy: Did the trainee acknowledge the customer's feelings, even briefly? Give credit for genuine-sounding concern.
+- transparency: Did the trainee give any explanation or hint at next steps, even if incomplete?
+- ownership: Did the trainee express any willingness to help or follow up, even without a full commitment?
+All four feedback fields are required. customer_response must always be your in-character dialogue only."""
 
 
 def load_prompt(filename: str) -> str:
@@ -81,9 +89,8 @@ def build_system_prompt(scenario: str, persona: str, training: bool) -> str:
     # Append persona emotional style
     prompt = base + "\n\n" + PERSONA_STYLES[persona]
 
-    # Append training feedback instructions if needed
-    if training:
-        prompt += FEEDBACK_BLOCK_INSTRUCTIONS
+    # Append JSON response format instructions (with or without feedback fields)
+    prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
 
     return prompt
 
@@ -96,29 +103,6 @@ def build_messages(history: list[dict], system_prompt: str, user_message: str) -
     messages.append({"role": "user", "content": user_message})
     return messages
 
-
-def parse_feedback_response(raw: str) -> tuple[str, dict | None]:
-    """
-    Split a response into customer_response and feedback dict.
-    Expects ###FEEDBACK### ... ###END### block appended by the model.
-    """
-    feedback = None
-    customer_response = raw.strip()
-
-    match = re.search(r"###FEEDBACK###\s*(\{.*?\})\s*(?:###END###)?", raw, re.DOTALL)
-    if match:
-        customer_response = raw[: match.start()].strip()
-        try:
-            feedback = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            feedback = {
-                "empathy": False,
-                "transparency": False,
-                "ownership": False,
-                "suggestion": "Could not parse feedback from model response.",
-            }
-
-    return customer_response, feedback
 
 
 def start_conversation(scenario: str, persona: str, training: bool) -> dict:
@@ -219,30 +203,32 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
         "Generate the performance report JSON now."
     )
 
+    print(f"\n--- REPORT INPUT ---")
+    print(f"History turns received: {len(history)}")
+    print(f"Transcript being sent:\n{transcript}")
+    print(f"---\n")
+
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
-        max_tokens=2048,
+        max_tokens=4096,
         temperature=0.3,
+        response_format={"type": "json_object"},
     )
 
     raw = response.choices[0].message.content.strip()
-    print("\n--- RAW REPORT OUTPUT ---\n", raw, "\n---\n")
-
-    # Strip all code fences (handles ```json, ``` anywhere in the output)
-    raw = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE).strip()
-
-    # Extract the outermost JSON object even if the LLM added surrounding text
-    start = raw.find("{")
-    end = raw.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        raw = raw[start:end + 1]
+    print(f"\n--- RAW REPORT OUTPUT (length={len(raw)}) ---\n{raw}\n---\n")
 
     try:
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        print(f"\n--- PARSED REPORT ---")
+        print(f"  customer_profile.name:    {parsed.get('customer_profile', {}).get('name')}")
+        print(f"  performance.overall_score:{parsed.get('performance', {}).get('overall_score')}")
+        print(f"  turn_feedback count:       {len(parsed.get('turn_feedback', []))}")
+        print(f"---\n")
     except json.JSONDecodeError as e:
         print(f"JSON parse error in generate_report: {e}\nRaw output was:\n{raw}")
         return {
@@ -257,6 +243,18 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
             "recommendations": ["Report generation failed. Please review the conversation manually."],
         }
 
+    # Validate required fields are present and warn if missing
+    required_checks = [
+        ("customer_profile.name", parsed.get("customer_profile", {}).get("name")),
+        ("performance.overall_score", parsed.get("performance", {}).get("overall_score")),
+        ("turn_feedback", parsed.get("turn_feedback")),
+    ]
+    for field, value in required_checks:
+        if not value and value != 0:
+            print(f"WARNING: report field '{field}' is missing or empty")
+
+    return parsed
+
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
     system_prompt = build_system_prompt(scenario, persona, training)
@@ -267,22 +265,27 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
         messages=messages,
         max_tokens=1024,
         temperature=0.7,
+        response_format={"type": "json_object"},
     )
 
     raw_text = response.choices[0].message.content
     print("\n--- RAW MODEL OUTPUT ---\n", raw_text, "\n---\n")
 
-    if training:
-        customer_response, feedback = parse_feedback_response(raw_text)
-        if feedback is None:
-            feedback = {
-                "empathy": False,
-                "transparency": False,
-                "ownership": False,
-                "suggestion": "The model did not return structured feedback for this turn. Review the response manually.",
-            }
-    else:
+    try:
+        parsed = json.loads(raw_text)
+        customer_response = parsed["customer_response"]
+        feedback = parsed.get("feedback") if training else None
+        print(f"  customer_response: {customer_response[:80]!r}")
+        if training:
+            print(f"  feedback: {feedback}")
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"JSON parse error in call_llm: {e}\nRaw output was:\n{raw_text}")
         customer_response = raw_text.strip()
-        feedback = None
+        feedback = {
+            "empathy": False,
+            "transparency": False,
+            "ownership": False,
+            "suggestion": "Could not parse structured response. Review manually.",
+        } if training else None
 
     return {"customer_response": customer_response, "feedback": feedback}
