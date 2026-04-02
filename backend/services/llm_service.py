@@ -54,10 +54,31 @@ RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No 
   }
 }
 
-Feedback evaluation rules — assess the CSR's most recent message:
-- empathy: Did the trainee acknowledge the customer's feelings, even briefly? Give credit for genuine-sounding concern.
-- transparency: Did the trainee give any explanation or hint at next steps, even if incomplete?
-- ownership: Did the trainee express any willingness to help or follow up, even without a full commitment?
+FEEDBACK EVALUATION — assess the CSR's most recent message using these STRICT rules:
+
+SCOPE: You MUST evaluate the ENTIRE CSR message — every sentence, every paragraph. Do NOT stop after the first sentence or paragraph. Scan the full text before assigning any boolean. If an action, apology, or explanation appears ANYWHERE in the message, it counts.
+
+STEP 1 — DETECT PRESENCE (binary). Assign true/false based solely on whether the behavior EXISTS anywhere in the full message, not its quality.
+
+- empathy: true if the message contains ANY apology or emotional acknowledgment.
+  Counts as true: "I'm sorry", "I am really sorry", "I apologize", "I understand how frustrating this is".
+  Do NOT require personalization, detail, or strong language. Presence alone = true.
+
+- transparency: true if the message contains ANY information, explanation, timeline, status update, or next step — even partial or vague.
+
+- ownership: true ONLY if the CSR explicitly states an action or next step they will take — search the ENTIRE message.
+  Counts as true: "I'll check this for you", "Let me look into that", "I'm pulling up your case now", "I'll follow up", "I'm sending this now", "I've authorized...", "I've pulled up...", "I've escalated...".
+  If ANY such action appears anywhere in the message, ownership MUST be true — even if buried in a later paragraph.
+  Counts as FALSE only if the ENTIRE message contains no action or next step at all.
+  CRITICAL: An apology alone, no matter how sincere, MUST NEVER be counted as ownership. Ownership requires an action verb directed at resolving the issue.
+
+STEP 2 — GENERATE COACHING (separate from classification). The suggestion must refine what exists, never deny it.
+  - If empathy = true → suggestion may say "make the apology more specific" but MUST NOT say "add an apology" or "show empathy"
+  - If transparency = true → suggestion may say "provide more detail" but MUST NOT say "give more information" as if none was given
+  - If ownership = true → suggestion may say "be more concrete about next steps" but MUST NOT say "take ownership"
+
+CONSISTENCY RULE: You are NEVER allowed to mark a behavior false and then suggest adding that same behavior. That is a contradiction and is forbidden.
+
 All four feedback fields are required. customer_response must always be your in-character dialogue only."""
 
 
@@ -173,19 +194,43 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
 
     system_prompt = load_prompt("report_prompt.txt")
 
+    # Build authoritative turn data — includes message text and stored booleans
+    turn_data = []
     transcript_lines = []
     for msg in history:
-        role = "Customer" if msg["role"] == "assistant" else "CSR"
-        transcript_lines.append(f"[{role}]: {msg['content']}")
-        if msg.get("feedback") and msg["role"] == "user":
+        if msg["role"] != "user":
+            continue  # skip customer (assistant) messages — only evaluate CSR turns
+        transcript_lines.append(f"[CSR]: {msg['content']}")
+        if msg.get("feedback"):
             fb = msg["feedback"]
-            transcript_lines.append(
-                f"  (Collected feedback — empathy: {fb.get('empathy')}, "
-                f"transparency: {fb.get('transparency')}, "
-                f"ownership: {fb.get('ownership')})"
-            )
+            turn_data.append({
+                "csr_message": msg["content"],
+                "empathy": fb.get("empathy"),
+                "transparency": fb.get("transparency"),
+                "ownership": fb.get("ownership"),
+            })
+
+    # feedback_list is kept for score computation (booleans only)
+    feedback_list = turn_data
 
     transcript = "\n".join(transcript_lines)
+
+    # Compute scores deterministically in Python — never delegated to the LLM
+    n = len(feedback_list)
+    if n > 0:
+        empathy_score    = int(sum(1 for f in feedback_list if f.get("empathy"))    / n * 100)
+        transparency_score = int(sum(1 for f in feedback_list if f.get("transparency")) / n * 100)
+        ownership_score  = int(sum(1 for f in feedback_list if f.get("ownership"))  / n * 100)
+    else:
+        empathy_score = transparency_score = ownership_score = 0
+    overall_score = int((empathy_score + transparency_score + ownership_score) / 3)
+
+    computed_scores = {
+        "empathy_score": empathy_score,
+        "transparency_score": transparency_score,
+        "ownership_score": ownership_score,
+        "overall_score": overall_score,
+    }
 
     domain_labels = {
         "vc1": "Health Insurance Billing",
@@ -197,14 +242,22 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
     domain = domain_labels.get(scenario, scenario.upper())
     mode_label = "Training" if training else "Evaluation"
 
+    # Strip booleans from what the LLM sees — it only needs the message text to write coaching notes
+    turn_data_for_llm = [{"index": i, "csr_message": td["csr_message"]} for i, td in enumerate(turn_data)]
+
     user_content = (
         f"Scenario: {scenario.upper()} | Domain: {domain} | Persona: {persona.capitalize()} | Mode: {mode_label}\n\n"
-        f"CONVERSATION TRANSCRIPT:\n{transcript}\n\n"
+        f"TURN_DATA:\n{json.dumps(turn_data_for_llm, indent=2)}\n\n"
+        f"PRE-COMPUTED SCORES (use these exact values — do NOT recalculate):\n{json.dumps(computed_scores, indent=2)}\n\n"
+        f"CONVERSATION TRANSCRIPT (for qualitative context only):\n{transcript}\n\n"
         "Generate the performance report JSON now."
     )
 
     print(f"\n--- REPORT INPUT ---")
     print(f"History turns received: {len(history)}")
+    print(f"Turn data entries: {n}")
+    print(f"turn_data: {json.dumps(turn_data)}")
+    print(f"Computed scores: {json.dumps(computed_scores)}")
     print(f"Transcript being sent:\n{transcript}")
     print(f"---\n")
 
@@ -243,6 +296,37 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
             "recommendations": ["Report generation failed. Please review the conversation manually."],
         }
 
+    # Enforce computed scores — overwrite whatever the LLM produced
+    if "performance" not in parsed:
+        parsed["performance"] = {}
+    parsed["performance"].update(computed_scores)
+
+    print(f"\n--- ENFORCED SCORES ---")
+    print(f"  empathy_score:     {empathy_score}")
+    print(f"  transparency_score:{transparency_score}")
+    print(f"  ownership_score:   {ownership_score}")
+    print(f"  overall_score:     {overall_score}")
+    print(f"---\n")
+
+    # Build turn_feedback entirely from backend truth — LLM only contributes coaching_notes
+    # coaching_notes is a plain string array keyed by index, matching TURN_DATA order
+    coaching_notes = parsed.get("coaching_notes", [])
+    assembled_turns = []
+    for i, td in enumerate(turn_data):
+        assembled_turns.append({
+            "csr_message": td["csr_message"],
+            "empathy":      td["empathy"],
+            "transparency": td["transparency"],
+            "ownership":    td["ownership"],
+            "coaching_note": coaching_notes[i] if i < len(coaching_notes) else "",
+        })
+    parsed["turn_feedback"] = assembled_turns
+
+    print(f"\n--- ASSEMBLED TURN FEEDBACK (from backend truth) ---")
+    for i, t in enumerate(assembled_turns):
+        print(f"  Turn {i+1}: empathy={t['empathy']} transparency={t['transparency']} ownership={t['ownership']}")
+    print(f"---\n")
+
     # Validate required fields are present and warn if missing
     required_checks = [
         ("customer_profile.name", parsed.get("customer_profile", {}).get("name")),
@@ -257,6 +341,10 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
 
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
+    print("\n--- CSR MESSAGE RECEIVED ---")
+    print(message)
+    print("---\n")
+
     system_prompt = build_system_prompt(scenario, persona, training)
     messages = build_messages(history, system_prompt, message)
 
