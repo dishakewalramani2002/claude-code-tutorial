@@ -57,6 +57,8 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
     if (!trimmed || loading) return;
 
     const userMessage = { role: "user", content: trimmed };
+    const updatedMessages = [...messages, userMessage];
+
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -68,7 +70,7 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
         persona,
         training,
         message: trimmed,
-        history: messages,
+        history: updatedMessages,
       });
 
       const { customer_response, feedback: newFeedback } = response.data;
