@@ -75,14 +75,14 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
 
       const { customer_response, feedback: newFeedback } = response.data;
 
-      setMessages(prev => {
-        const csrIdx = prev.map(m => m.role).lastIndexOf("user");
-        const withFeedback = prev.map((m, i) =>
+      const csrIdx = updatedMessages.length - 1;
+      if (newFeedback) setSelectedIdx(csrIdx);
+      setMessages([
+        ...updatedMessages.map((m, i) =>
           i === csrIdx ? { ...m, feedback: newFeedback } : m
-        );
-        if (newFeedback) setSelectedIdx(csrIdx);
-        return [...withFeedback, { role: "assistant", content: customer_response }];
-      });
+        ),
+        { role: "assistant", content: customer_response },
+      ]);
     } catch {
       setError("Failed to reach the server. Make sure the backend is running on port 8000.");
     } finally {
