@@ -92,6 +92,69 @@ const PERSONAS = [
   },
 ];
 
+// Avery Collins — detailed persona for loan_delay + demanding
+export const AVERY_COLLINS_PERSONA = {
+  name: "Avery Collins",
+  ageGroup: "28-40",
+  communicationStyle: "Demanding, sharp, impatient, presses for immediate answers",
+  domain: "Finance and Banking",
+  scenario: "loan_delay",
+  issue: "Customer has not received the loan funds and is frustrated by vague updates and lack of clear timeline",
+  primaryEmotion: "demanding",
+  emotionalIntensity: "high",
+  hiddenBackground: [
+    "The customer is relying on this loan to complete a major payment (e.g., housing deposit / urgent bill)",
+    "Missing the deadline may result in financial penalties or losing an important opportunity",
+    "They have already been told an earlier approval date that was not met",
+    "They feel a loss of control over their financial situation",
+    "They will NOT explicitly say they are anxious, but this anxiety drives their urgency and pressure",
+  ],
+  interactionContext: [
+    "This is a live customer support phone call",
+    "The customer expects a clear answer, not general process explanations",
+    "The customer starts with demands and complaints, not full context",
+    "Information is only revealed when the CSR asks precise, relevant follow-up questions",
+  ],
+  targetSkill: "Empathy and Emotional Acknowledgement",
+  behaviorRules: {
+    baseline: [
+      "Responses should be within four lines",
+      "Starts conversation in a demanding and pressured tone",
+      "Repeatedly asks for a clear timeline or confirmation",
+      "Rejects vague answers like 'it's being processed' or 'soon'",
+      "DO NOT use meta phrases such as: 'I'd start by…', 'let me explain…', 'since you asked…', 'what I would do is…', 'first/second/third…'",
+      "Speak like a real person under financial stress, not like giving structured advice",
+    ],
+    escalationBehavior: [
+      "If CSR does NOT provide exact, concrete information: repeats demands more aggressively, questions competence of the bank",
+      "Uses pressure statements: 'This should not be this hard' / 'Why is nobody giving me a straight answer?'",
+      "If still unresolved: threatens escalation (supervisor, complaint, switching banks)",
+      "Uses conditional escalation: 'If this isn't resolved today, I'm filing a complaint' / 'If I don't get a real answer, I'm taking this elsewhere'",
+    ],
+  },
+  deescalationTriggers: [
+    "CSR provides exact loan status with identifier",
+    "CSR provides specific reason for delay (not generic)",
+    "CSR provides exact completion timeline (specific date/time)",
+    "CSR provides clear next step + ownership",
+    "CSR shows empathy BEFORE giving information — ALL above elements must be present and specific; if ANY part is vague or missing, do NOT de-escalate",
+  ],
+  deescalationBehavior: [
+    "Tone softens gradually ONLY after all conditions are met",
+    "Stops repeating demands, becomes more cooperative",
+    "May ask clarifying questions",
+    "Remains cautious, not overly friendly",
+  ],
+};
+
+// Scenario-specific persona description overrides — shown in the persona selector UI
+// when a particular scenario + persona combination has a distinct character
+const SCENARIO_PERSONA_OVERRIDES = {
+  loan_delay: {
+    demanding: `${AVERY_COLLINS_PERSONA.name} — sharp and impatient about a delayed loan approval. Escalates aggressively if given vague answers. Only de-escalates when given exact status, reason, timeline, and ownership — with empathy first.`,
+  },
+};
+
 // ─── STEP COMPONENTS ─────────────────────────────────────────────────────────
 function StepHeader({ step, total, label }) {
   return (
@@ -172,7 +235,7 @@ function StepScenario({ domain, onSelect, onBack }) {
 }
 
 // Step 3: Choose Persona
-function StepPersona({ onSelect, onBack }) {
+function StepPersona({ onSelect, onBack, scenario }) {
   return (
     <div>
       <BackButton onClick={onBack} />
@@ -181,17 +244,20 @@ function StepPersona({ onSelect, onBack }) {
         This sets the emotional style of the virtual customer you will interact with.
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-        {PERSONAS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => onSelect(p)}
-            className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-md hover:border-blue-400 transition space-y-2"
-          >
-            <span className="text-3xl block">{p.emoji}</span>
-            <p className="text-sm font-semibold text-gray-800">{p.label}</p>
-            <p className="text-xs text-gray-500 leading-snug">{p.description}</p>
-          </button>
-        ))}
+        {PERSONAS.map((p) => {
+          const overrideDescription = scenario && SCENARIO_PERSONA_OVERRIDES[scenario.id]?.[p.id];
+          return (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p)}
+              className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-md hover:border-blue-400 transition space-y-2"
+            >
+              <span className="text-3xl block">{p.emoji}</span>
+              <p className="text-sm font-semibold text-gray-800">{p.label}</p>
+              <p className="text-xs text-gray-500 leading-snug">{overrideDescription ?? p.description}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -304,7 +370,7 @@ export default function ModeSelector({ onSelect }) {
           <StepScenario domain={selectedDomain} onSelect={handleScenarioSelect} onBack={handleBack} />
         )}
         {step === 3 && (
-          <StepPersona onSelect={handlePersonaSelect} onBack={handleBack} />
+          <StepPersona onSelect={handlePersonaSelect} onBack={handleBack} scenario={selectedScenario} />
         )}
         {step === 4 && selectedScenario && selectedPersona && (
           <StepMode

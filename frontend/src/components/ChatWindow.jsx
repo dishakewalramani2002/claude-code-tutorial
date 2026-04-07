@@ -144,6 +144,7 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
       <div className={`flex-1 overflow-hidden ${activeTab === "portal" ? "flex flex-col" : "hidden"}`}>
         <WorkflowPortal
           scenario={scenario}
+          persona={persona}
           step={portalStep}
           completed={portalCompleted}
           onAdvance={(stepId) => {
