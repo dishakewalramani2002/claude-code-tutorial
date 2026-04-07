@@ -1027,6 +1027,54 @@ const REFUND_REQUEST_CUSTOMER = {
   status: "FAILED – Pending Reversal",
 };
 
+// George Pan — synced with the refund_request + angry LLM persona
+// ─── PORTAL PERSONA REGISTRY ──────────────────────────────────────────────────
+// Single source of truth for scenario+persona specific portal data.
+// Key format: "scenario:persona"
+// Add a new entry here to support a new persona — no other code changes needed.
+const PORTAL_PERSONAS = {
+  "refund_request:angry": {
+    name: "George Pan",
+    firstName: "George",
+    phone: "(628) 555-0198",
+    transaction: {
+      orderId: "59214",
+      amount: "$349.99",
+      date: "2026-03-25",
+      product: "BaristaPro 350 Espresso Machine",
+      merchant: "Home Appliances Direct",
+      status: "FAILED – Pending Refund",
+    },
+    details: {
+      type: "Credit Card Payment",
+      failureCode: "DEFECTIVE_PRODUCT",
+      merchantResponse: "Return request acknowledged",
+      daysSince: "7 days",
+      refundEligibility: "ELIGIBLE – Defective Item Return",
+      estimatedReturn: "3–5 business days",
+    },
+  },
+};
+
+function buildCustomerFromPersona(p) {
+  return {
+    name: p.name,
+    transactionId: `ORD-${p.transaction.orderId}`,
+    amount: p.transaction.amount,
+    date: p.transaction.date,
+    merchant: p.transaction.merchant,
+    phone: p.phone,
+    status: p.transaction.status,
+  };
+}
+
+function buildDetailsFromPersona(p) {
+  return {
+    ...p.details,
+    processorRef: `ORD-${p.transaction.orderId}`,
+  };
+}
+
 const REFUND_REQUEST_DETAILS = {
   type: "Debit Card Payment",
   processorRef: "PRO-88214",
@@ -1333,7 +1381,7 @@ function FinCommunicate({ config, onReset }) {
 }
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function WorkflowPortal({ scenario, step, completed, onAdvance, onReset }) {
+export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset }) {
   const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
 
@@ -1343,7 +1391,62 @@ export default function WorkflowPortal({ scenario, step, completed, onAdvance, o
 
   const currentStepData = steps[step];
 
-  const finConfig = FIN_SCREEN_CONFIGS[scenario]?.[Math.min(step, 5)];
+  const customerName = scenario === "loan_delay" && persona === "demanding" ? "Avery Collins" : "Alex Chen";
+  const customerFirstName = customerName.split(" ")[0];
+
+  const baseFinConfig = FIN_SCREEN_CONFIGS[scenario]?.[Math.min(step, 5)];
+  let finConfig = baseFinConfig;
+  if (scenario === "loan_delay" && baseFinConfig) {
+    const stepIdx = Math.min(step, 5);
+    if (stepIdx === 0) {
+      finConfig = { ...baseFinConfig, customer: { ...baseFinConfig.customer, name: customerName } };
+    } else if (stepIdx === 4) {
+      finConfig = {
+        ...baseFinConfig,
+        summary: baseFinConfig.summary.map(([label, value]) =>
+          label === "Customer" ? [label, customerName] : [label, value]
+        ),
+      };
+    } else if (stepIdx === 5) {
+      finConfig = {
+        ...baseFinConfig,
+        customerName: customerFirstName,
+        script: baseFinConfig.script.replace(/\bAlex\b/g, customerFirstName),
+      };
+    }
+  } else {
+    const portalPersona = PORTAL_PERSONAS[`${scenario}:${persona}`];
+    if (portalPersona && baseFinConfig) {
+      const stepIdx = Math.min(step, 5);
+      const customer = buildCustomerFromPersona(portalPersona);
+      const details = buildDetailsFromPersona(portalPersona);
+      const { firstName, transaction } = portalPersona;
+      if (stepIdx === 0) {
+        finConfig = { ...baseFinConfig, customer };
+      } else if (stepIdx === 1) {
+        finConfig = { ...baseFinConfig, data: details };
+      } else if (stepIdx === 4) {
+        finConfig = {
+          ...baseFinConfig,
+          summary: baseFinConfig.summary.map(([label, value]) => {
+            if (label === "Customer") return [label, customer.name];
+            if (label === "Transaction ID") return [label, customer.transactionId];
+            if (label === "Refund Amount") return [label, customer.amount];
+            return [label, value];
+          }),
+          notePlaceholder: `e.g. Customer called re: defective ${customer.transactionId}. ${transaction.product} — ${details.failureCode}. Full refund of ${customer.amount} initiated to original credit card. ETA ${details.estimatedReturn}.`,
+        };
+      } else if (stepIdx === 5) {
+        finConfig = {
+          ...baseFinConfig,
+          customerName: firstName,
+          script: `"${firstName}, I've reviewed your order and confirmed the return request for the ${transaction.product} — order ${customer.transactionId}. Based on the issue reported, you qualify for a full refund of ${customer.amount} to your original credit card.\n\nI've initiated the refund now. You should see ${customer.amount} returned to your card within ${details.estimatedReturn}.\n\nIs there anything else I can help you with today?"`,
+          caseRef: `REFUND-${customer.transactionId}`,
+          resolution: `Full refund of ${customer.amount} initiated to original credit card. Customer informed. ETA ${details.estimatedReturn}.`,
+        };
+      }
+    }
+  }
 
   const screenMap = {
     vc1: [VC1Lookup, VC1Bills, VC1Detail, VC1Policy, VC1Decision, VC1Communicate],

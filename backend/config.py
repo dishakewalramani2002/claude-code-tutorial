@@ -29,3 +29,7 @@ def build_client():
     else:  # groq (default)
         from groq import Groq
         return Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+
+print("Using provider:", LLM_PROVIDER)
+print("Using model:", MODEL_NAME)
