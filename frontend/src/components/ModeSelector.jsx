@@ -313,7 +313,9 @@ function StepMode({ scenario, persona, onSelect, onBack }) {
 }
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function ModeSelector({ onSelect }) {
+import NavBar from "./NavBar";
+
+export default function ModeSelector({ onSelect, navProps }) {
   const [step, setStep] = useState(1);
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
@@ -363,7 +365,12 @@ export default function ModeSelector({ onSelect }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+        <span className="font-semibold text-gray-800">CSR Simulator</span>
+        <NavBar {...navProps} />
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
       <div className="w-full max-w-4xl">
         {step === 1 && <StepDomain onSelect={handleDomainSelect} />}
         {step === 2 && selectedDomain && (
@@ -380,6 +387,7 @@ export default function ModeSelector({ onSelect }) {
             onBack={handleBack}
           />
         )}
+      </div>
       </div>
     </div>
   );

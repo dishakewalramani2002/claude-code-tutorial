@@ -3,6 +3,7 @@ import axios from "axios";
 import MessageBubble from "./MessageBubble";
 import FeedbackPanel from "./FeedbackPanel";
 import WorkflowPortal from "./WorkflowPortal";
+import NavBar from "./NavBar";
 
 const API_URL = "http://localhost:8000/chat";
 
@@ -12,10 +13,11 @@ const SCENARIO_LABELS = {
   vc3: "Lost Baggage",
 };
 
-export default function ChatWindow({ sessionConfig, onEndSession }) {
+export default function ChatWindow({ sessionConfig, token, navProps, onEndSession }) {
   const { scenario, persona, training, scenarioLabel, personaEmoji, personaLabel } = sessionConfig;
 
   const [messages, setMessages] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(null);
@@ -25,6 +27,7 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const authHeaders = { Authorization: `Bearer ${token}` };
 
   const activeFeedback =
     selectedIdx !== null ? messages[selectedIdx]?.feedback ?? null : null;
@@ -34,22 +37,26 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
   }, [messages, loading]);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function fetchOpener() {
       setLoading(true);
       try {
-        const response = await axios.post("http://localhost:8000/start", {
-          scenario,
-          persona,
-          training,
-        });
+        const response = await axios.post(
+          "http://localhost:8000/start",
+          { scenario, persona, training },
+          { headers: authHeaders, signal: controller.signal }
+        );
+        setSessionId(response.data.session_id);
         setMessages([{ role: "assistant", content: response.data.customer_response }]);
-      } catch {
+      } catch (err) {
+        if (axios.isCancel(err)) return;
         setError("Failed to start session. Make sure the backend is running on port 8000.");
       } finally {
         setLoading(false);
       }
     }
     fetchOpener();
+    return () => controller.abort();
   }, [scenario, persona, training]);
 
   async function sendMessage() {
@@ -65,13 +72,11 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
     setError(null);
 
     try {
-      const response = await axios.post(API_URL, {
-        scenario,
-        persona,
-        training,
-        message: trimmed,
-        history: updatedMessages,
-      });
+      const response = await axios.post(
+        API_URL,
+        { scenario, persona, training, message: trimmed, history: updatedMessages, session_id: sessionId },
+        { headers: authHeaders }
+      );
 
       const { customer_response, feedback: newFeedback } = response.data;
 
@@ -132,12 +137,15 @@ export default function ChatWindow({ sessionConfig, onEndSession }) {
             ))}
           </div>
         </div>
-        <button
-          onClick={() => onEndSession(messages)}
-          className="text-sm text-gray-500 hover:text-red-500 transition"
-        >
-          End Session & Get Report
-        </button>
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => onEndSession(messages, sessionId)}
+            className="text-sm text-gray-500 hover:text-red-500 transition"
+          >
+            End Session & Get Report
+          </button>
+          <NavBar {...navProps} />
+        </div>
       </header>
 
       {/* Portal tab — always mounted, hidden when not active so state persists */}
