@@ -10,29 +10,6 @@ client = build_client()
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
-PERSONA_STYLES = {
-    "angry": (
-        "EMOTIONAL STYLE FOR THIS CALL: You are intensely frustrated and angry. "
-        "You may be curt, make accusations, and demand immediate action. "
-        "You are at the edge of your patience. However, you will calm down if the agent genuinely helps you."
-    ),
-    "confused": (
-        "EMOTIONAL STYLE FOR THIS CALL: You are overwhelmed and confused by the whole situation. "
-        "You frequently ask for clarification, struggle with technical terms, and need things explained simply. "
-        "You are not hostile — just lost and in need of clear, step-by-step guidance."
-    ),
-    "demanding": (
-        "EMOTIONAL STYLE FOR THIS CALL: You are composed but extremely demanding. "
-        "You know exactly what outcome you want and you push firmly for it. "
-        "You are impatient with process or delays and escalate quickly if the agent cannot deliver results."
-    ),
-    "anxious": (
-        "EMOTIONAL STYLE FOR THIS CALL: You are anxious and worried, prone to catastrophizing. "
-        "You ask many 'what if' questions and need frequent reassurance. "
-        "You are polite but clearly distressed and need the agent to be calm, reassuring, and specific."
-    ),
-}
-
 RESPONSE_FORMAT_PLAIN = """
 
 RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
@@ -89,6 +66,13 @@ def load_prompt(filename: str) -> str:
 
 
 def build_system_prompt(scenario: str, persona: str, training: bool) -> str:
+    """
+    Build the final system prompt by:
+    1. Loading the base scenario persona prompt (character, scenario, resolution criteria)
+    2. Stripping any existing feedback block (so we control it dynamically)
+    3. Appending the emotion prompt (behavioral dynamics, escalation/de-escalation patterns)
+    4. Appending feedback instructions if training=True
+    """
     base = load_prompt(f"{scenario}_prompt.txt")
 
     base = re.sub(
@@ -131,7 +115,8 @@ De-escalation ONLY if:
 - Timeline specific
 - Refund method confirmed (original payment)"""
 
-    prompt = base + "\n\n" + PERSONA_STYLES[persona]
+    emotion = load_prompt(f"emotions/{persona}.txt")
+    prompt = base + "\n\n" + emotion
     prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
 
     return prompt

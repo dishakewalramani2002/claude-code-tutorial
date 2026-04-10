@@ -172,7 +172,7 @@ const VC3_TRACE = {
   lastScan: "ORD – Gate H7 area (Chicago O'Hare)",
   daysMissing: 2,
   pirFiled: "Yes – MIA Baggage Office",
-  contents: "Blood pressure medication (14-day supply), work laptop, client presentation materials",
+  contents: "Blood pressure medication (14-day supply), formal clothes, client documents",
   estimatedResolution: "24–72 hours",
 };
 
@@ -186,7 +186,7 @@ Interim Expense Reimbursement
   │  Maximum Duration:       5 days ($500 max)           │
   │  Clothing & Toiletries:  ELIGIBLE ✓                 │
   │  Prescription Meds:      ELIGIBLE ✓ (with Rx proof) │
-  │  Electronics (laptop):   NOT ELIGIBLE ✗             │
+  │  Electronics:            NOT ELIGIBLE ✗             │
   └──────────────────────────────────────────────────────┘
   Requires original receipts submitted within 30 days.
 
