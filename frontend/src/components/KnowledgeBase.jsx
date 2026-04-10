@@ -21,7 +21,7 @@ const SUGGESTIONS = {
     "How do I flag a bag as Medical Priority in WorldTracer?",
     "What is the DOT liability limit for lost domestic baggage?",
     "How long before a delayed bag becomes a lost bag claim?",
-    "Can a passenger claim for a laptop in an interim expense reimbursement?",
+    "Can a passenger claim for clothing and documents in an interim expense reimbursement?",
   ],
 };
 
