@@ -1,14 +1,18 @@
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
 
 load_dotenv()
 
-# ── OpenAI Config ─────────────────────────────────────────────
-
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-5.4")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
+MODEL_NAME = os.getenv("MODEL_NAME")
 
 def build_client():
-    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    if LLM_PROVIDER == "groq":
+        from groq import Groq
+        return Groq(api_key=os.getenv("GROQ_API_KEY"))
+    else:
+        from openai import OpenAI
+        return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-print("Using model:", MODEL_NAME)
+print(f"Using provider: {LLM_PROVIDER}")
+print(f"Using model: {MODEL_NAME}")
