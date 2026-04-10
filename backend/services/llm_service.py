@@ -155,8 +155,15 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         temperature=0.7,
     )
 
-    raw_text = response.choices[0].message.content
+    raw_text = response.choices[0].message.content.strip()
     raw_text = re.sub(r"###FEEDBACK###.*", "", raw_text, flags=re.DOTALL).strip()
+
+    # LLM may return JSON even for the opener (system prompt instructs it to)
+    try:
+        parsed = json.loads(raw_text)
+        raw_text = parsed.get("customer_response", raw_text)
+    except (json.JSONDecodeError, AttributeError):
+        pass
 
     return {"customer_response": raw_text, "feedback": None}
 

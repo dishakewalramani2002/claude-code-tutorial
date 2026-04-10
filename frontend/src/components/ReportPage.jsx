@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import NavBar from "./NavBar";
 
 const SCENARIO_LABELS = {
   vc1: "Health Insurance Billing",
@@ -48,7 +49,7 @@ function Badge({ value }) {
   );
 }
 
-export default function ReportPage({ report, sessionConfig, onNewSession }) {
+export default function ReportPage({ report, sessionConfig, navProps, onNewSession }) {
   const { scenario, persona, training, personaEmoji, personaLabel } = sessionConfig ?? {};
   const modeLabel = training ? "Training" : "Evaluation";
   const sessionLabel = `${modeLabel} — ${SCENARIO_LABELS[scenario] ?? scenario} · ${personaEmoji ?? ""} ${personaLabel ?? ""}`.trim();
@@ -81,7 +82,7 @@ export default function ReportPage({ report, sessionConfig, onNewSession }) {
           <span className="font-semibold text-gray-800">Session Report</span>
           <span className="ml-3 text-sm text-gray-400">{sessionLabel}</span>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleDownload}
             className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
@@ -94,6 +95,7 @@ export default function ReportPage({ report, sessionConfig, onNewSession }) {
           >
             New Session
           </button>
+          <NavBar {...navProps} />
         </div>
       </div>
 
