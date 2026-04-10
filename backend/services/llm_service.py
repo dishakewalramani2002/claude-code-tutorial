@@ -89,17 +89,8 @@ def load_prompt(filename: str) -> str:
 
 
 def build_system_prompt(scenario: str, persona: str, training: bool) -> str:
-    """
-    Build the final system prompt by:
-    1. Loading the base scenario prompt
-    2. Stripping any existing feedback block (so we control it dynamically)
-    3. Appending the persona emotional style
-    4. Appending feedback instructions if training=True
-    """
     base = load_prompt(f"{scenario}_prompt.txt")
 
-    # Strip any existing feedback block instructions so we control them dynamically
-    # (vc1_prompt.txt has them baked in; we remove and re-add conditionally)
     base = re.sub(
         r"\nAfter each of your responses.*###END###\s*",
         "",
@@ -107,11 +98,9 @@ def build_system_prompt(scenario: str, persona: str, training: bool) -> str:
         flags=re.DOTALL,
     ).strip()
 
-    # Inject customer name before appending persona style
     customer_name = "Avery Collins" if scenario == "loan_delay" and persona == "demanding" else "Alex"
     base = base.replace("{customer_name}", customer_name)
 
-    # Scenario + persona specific prompt overrides
     if scenario == "refund_request" and persona == "angry":
         base = """You are a frustrated customer named George Pan who received a defective premium coffee machine and is demanding a refund.
 
@@ -142,17 +131,13 @@ De-escalation ONLY if:
 - Timeline specific
 - Refund method confirmed (original payment)"""
 
-    # Append persona emotional style
     prompt = base + "\n\n" + PERSONA_STYLES[persona]
-
-    # Append JSON response format instructions (with or without feedback fields)
     prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
 
     return prompt
 
 
 def build_messages(history: list[dict], system_prompt: str, user_message: str) -> list[dict]:
-    """Build chat messages with system prompt prepended."""
     messages = [{"role": "system", "content": system_prompt}]
     for turn in history:
         messages.append({"role": turn["role"], "content": turn["content"]})
@@ -160,9 +145,7 @@ def build_messages(history: list[dict], system_prompt: str, user_message: str) -
     return messages
 
 
-
 def start_conversation(scenario: str, persona: str, training: bool) -> dict:
-    """Generate the customer's opening message with no CSR turn yet."""
     system_prompt = build_system_prompt(scenario, persona, training)
 
     openers = {
@@ -172,28 +155,28 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         "loan_delay": "Begin the call. Introduce yourself and explain that your loan approval or disbursement has been delayed and you need to know what is happening.",
         "refund_request": "Begin the call. Introduce yourself and explain that you need a refund for a failed or incorrect financial transaction.",
     }
+
     opener = openers[scenario]
 
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": opener},
     ]
+
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=messages,
-        max_tokens=512,
+        max_completion_tokens=512,
         temperature=0.7,
     )
-    raw_text = response.choices[0].message.content
 
-    # Strip any feedback block that leaks into the opener
+    raw_text = response.choices[0].message.content
     raw_text = re.sub(r"###FEEDBACK###.*", "", raw_text, flags=re.DOTALL).strip()
 
     return {"customer_response": raw_text, "feedback": None}
 
 
 def lookup_knowledge_base(scenario: str, query: str) -> str:
-    """Answer a CSR's internal knowledge base query."""
     kb_prompts = {
         "vc1": "kb_vc1_prompt.txt",
         "vc2": "kb_vc2_prompt.txt",
@@ -201,6 +184,7 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
         "loan_delay": "kb_loan_delay_prompt.txt",
         "refund_request": "kb_refund_request_prompt.txt",
     }
+
     system_prompt = load_prompt(kb_prompts[scenario])
 
     response = client.chat.completions.create(
@@ -209,10 +193,35 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query},
         ],
-        max_tokens=512,
+        max_completion_tokens=512,
         temperature=0.3,
     )
+
     return response.choices[0].message.content.strip()
+
+
+def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
+    system_prompt = build_system_prompt(scenario, persona, training)
+    messages = build_messages(history, system_prompt, message)
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        max_completion_tokens=1024,
+        temperature=0.7,
+        response_format={"type": "json_object"},
+    )
+
+    raw_text = response.choices[0].message.content
+
+    try:
+        parsed = json.loads(raw_text)
+        return {
+            "customer_response": parsed["customer_response"],
+            "feedback": parsed.get("feedback") if training else None,
+        }
+    except:
+        return {"customer_response": raw_text.strip(), "feedback": None}
 
 
 def generate_report(scenario: str, persona: str, training: bool, history: list[dict]) -> dict:
@@ -229,14 +238,13 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
 
     system_prompt = load_prompt("report_prompt.txt")
 
-    # Build authoritative turn data — includes message text and stored booleans
+    # Build authoritative turn data and full transcript for context
     turn_data = []
     transcript_lines = []
     for msg in history:
-        if msg["role"] != "user":
-            continue  # skip customer (assistant) messages — only evaluate CSR turns
-        transcript_lines.append(f"[CSR]: {msg['content']}")
-        if msg.get("feedback"):
+        role_label = "Customer" if msg["role"] == "assistant" else "CSR"
+        transcript_lines.append(f"[{role_label}]: {msg['content']}")
+        if msg["role"] == "user" and msg.get("feedback"):
             fb = msg["feedback"]
             turn_data.append({
                 "csr_message": msg["content"],
@@ -245,17 +253,14 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
                 "ownership": fb.get("ownership"),
             })
 
-    # feedback_list is kept for score computation (booleans only)
-    feedback_list = turn_data
-
     transcript = "\n".join(transcript_lines)
 
     # Compute scores deterministically in Python — never delegated to the LLM
-    n = len(feedback_list)
+    n = len(turn_data)
     if n > 0:
-        empathy_score    = int(sum(1 for f in feedback_list if f.get("empathy"))    / n * 100)
-        transparency_score = int(sum(1 for f in feedback_list if f.get("transparency")) / n * 100)
-        ownership_score  = int(sum(1 for f in feedback_list if f.get("ownership"))  / n * 100)
+        empathy_score      = int(sum(1 for f in turn_data if f.get("empathy"))      / n * 100)
+        transparency_score = int(sum(1 for f in turn_data if f.get("transparency")) / n * 100)
+        ownership_score    = int(sum(1 for f in turn_data if f.get("ownership"))    / n * 100)
     else:
         empathy_score = transparency_score = ownership_score = 0
     overall_score = int((empathy_score + transparency_score + ownership_score) / 3)
@@ -267,6 +272,9 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
         "overall_score": overall_score,
     }
 
+    # Strip booleans from what the LLM sees — it only needs message text to write coaching notes
+    turn_data_for_llm = [{"index": i, "csr_message": td["csr_message"]} for i, td in enumerate(turn_data)]
+
     domain_labels = {
         "vc1": "Health Insurance Billing",
         "vc2": "Flight Cancellation",
@@ -277,9 +285,6 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
     domain = domain_labels.get(scenario, scenario.upper())
     mode_label = "Training" if training else "Evaluation"
 
-    # Strip booleans from what the LLM sees — it only needs the message text to write coaching notes
-    turn_data_for_llm = [{"index": i, "csr_message": td["csr_message"]} for i, td in enumerate(turn_data)]
-
     user_content = (
         f"Scenario: {scenario.upper()} | Domain: {domain} | Persona: {persona.capitalize()} | Mode: {mode_label}\n\n"
         f"TURN_DATA:\n{json.dumps(turn_data_for_llm, indent=2)}\n\n"
@@ -289,11 +294,8 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
     )
 
     print(f"\n--- REPORT INPUT ---")
-    print(f"History turns received: {len(history)}")
-    print(f"Turn data entries: {n}")
-    print(f"turn_data: {json.dumps(turn_data)}")
+    print(f"History turns: {len(history)} | Scored CSR turns: {n}")
     print(f"Computed scores: {json.dumps(computed_scores)}")
-    print(f"Transcript being sent:\n{transcript}")
     print(f"---\n")
 
     response = client.chat.completions.create(
@@ -302,30 +304,21 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
-        max_tokens=4096,
+        max_completion_tokens=4096,
         temperature=0.3,
         response_format={"type": "json_object"},
     )
 
     raw = response.choices[0].message.content.strip()
-    print(f"\n--- RAW REPORT OUTPUT (length={len(raw)}) ---\n{raw}\n---\n")
 
     try:
         parsed = json.loads(raw)
-        print(f"\n--- PARSED REPORT ---")
-        print(f"  customer_profile.name:    {parsed.get('customer_profile', {}).get('name')}")
-        print(f"  performance.overall_score:{parsed.get('performance', {}).get('overall_score')}")
-        print(f"  turn_feedback count:       {len(parsed.get('turn_feedback', []))}")
-        print(f"---\n")
     except json.JSONDecodeError as e:
-        print(f"JSON parse error in generate_report: {e}\nRaw output was:\n{raw}")
+        print(f"JSON parse error in generate_report: {e}")
         return {
             "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "N/A", "context": ""},
             "success_criteria": [],
-            "performance": {
-                "empathy_score": 0, "transparency_score": 0, "ownership_score": 0,
-                "overall_score": 0, "strengths": [], "critical_mistakes": [],
-            },
+            "performance": {"empathy_score": 0, "transparency_score": 0, "ownership_score": 0, "overall_score": 0, "strengths": [], "critical_mistakes": []},
             "turn_feedback": [],
             "key_learnings": [],
             "recommendations": ["Report generation failed. Please review the conversation manually."],
@@ -336,16 +329,9 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
         parsed["performance"] = {}
     parsed["performance"].update(computed_scores)
 
-    print(f"\n--- ENFORCED SCORES ---")
-    print(f"  empathy_score:     {empathy_score}")
-    print(f"  transparency_score:{transparency_score}")
-    print(f"  ownership_score:   {ownership_score}")
-    print(f"  overall_score:     {overall_score}")
-    print(f"---\n")
-
     # Build turn_feedback entirely from backend truth — LLM only contributes coaching_notes
-    # coaching_notes is a plain string array keyed by index, matching TURN_DATA order
     coaching_notes = parsed.get("coaching_notes", [])
+    fallback_note = "Focus on making the response more specific and aligned with the customer's needs."
     assembled_turns = []
     for i, td in enumerate(turn_data):
         assembled_turns.append({
@@ -353,62 +339,13 @@ def generate_report(scenario: str, persona: str, training: bool, history: list[d
             "empathy":      td["empathy"],
             "transparency": td["transparency"],
             "ownership":    td["ownership"],
-            "coaching_note": coaching_notes[i] if i < len(coaching_notes) else "",
+            "coaching_note": coaching_notes[i] if i < len(coaching_notes) else fallback_note,
         })
     parsed["turn_feedback"] = assembled_turns
 
-    print(f"\n--- ASSEMBLED TURN FEEDBACK (from backend truth) ---")
-    for i, t in enumerate(assembled_turns):
-        print(f"  Turn {i+1}: empathy={t['empathy']} transparency={t['transparency']} ownership={t['ownership']}")
+    print(f"\n--- ENFORCED REPORT ---")
+    print(f"  scores: {json.dumps(computed_scores)}")
+    print(f"  turn_feedback count: {len(assembled_turns)}")
     print(f"---\n")
 
-    # Validate required fields are present and warn if missing
-    required_checks = [
-        ("customer_profile.name", parsed.get("customer_profile", {}).get("name")),
-        ("performance.overall_score", parsed.get("performance", {}).get("overall_score")),
-        ("turn_feedback", parsed.get("turn_feedback")),
-    ]
-    for field, value in required_checks:
-        if not value and value != 0:
-            print(f"WARNING: report field '{field}' is missing or empty")
-
     return parsed
-
-
-def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
-    print("\n--- CSR MESSAGE RECEIVED ---")
-    print(message)
-    print("---\n")
-
-    system_prompt = build_system_prompt(scenario, persona, training)
-    messages = build_messages(history, system_prompt, message)
-
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        max_tokens=1024,
-        temperature=0.7,
-        response_format={"type": "json_object"},
-    )
-
-    raw_text = response.choices[0].message.content
-    print("\n--- RAW MODEL OUTPUT ---\n", raw_text, "\n---\n")
-
-    try:
-        parsed = json.loads(raw_text)
-        customer_response = parsed["customer_response"]
-        feedback = parsed.get("feedback") if training else None
-        print(f"  customer_response: {customer_response[:80]!r}")
-        if training:
-            print(f"  feedback: {feedback}")
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"JSON parse error in call_llm: {e}\nRaw output was:\n{raw_text}")
-        customer_response = raw_text.strip()
-        feedback = {
-            "empathy": False,
-            "transparency": False,
-            "ownership": False,
-            "suggestion": "Could not parse structured response. Review manually.",
-        } if training else None
-
-    return {"customer_response": customer_response, "feedback": feedback}
