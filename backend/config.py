@@ -15,4 +15,4 @@ def build_client():
         return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 print(f"Using provider: {LLM_PROVIDER}")
-print(f"Using model: {MODEL_NAME}")
+print(f"Using model: {MODEL_NAME}"
