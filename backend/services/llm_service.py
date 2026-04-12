@@ -24,39 +24,116 @@ RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No 
 {
   "customer_response": "Your in-character reply here (2-4 sentences).",
   "feedback": {
-    "empathy": true,
-    "transparency": false,
-    "ownership": true,
-    "suggestion": "One concrete sentence on what the trainee could do better or did well."
+    "signals": {
+      "empathyFirst": "Strong | Developing | Needs Work",
+      "activeListening": "Strong | Developing | Needs Work"
+    },
+    "nextStep": ""
   }
-}
+}"""
 
-FEEDBACK EVALUATION — assess the CSR's most recent message using these STRICT rules:
+COACHING_INSTRUCTIONS = """
 
-SCOPE: You MUST evaluate the ENTIRE CSR message — every sentence, every paragraph. Do NOT stop after the first sentence or paragraph. Scan the full text before assigning any boolean. If an action, apology, or explanation appears ANYWHERE in the message, it counts.
+You are a senior CSR training coach specializing in customer de-escalation.
+Your role is to evaluate a CSR's response and provide one immediate coaching direction to improve the NEXT reply.
 
-STEP 1 — DETECT PRESENCE (binary). Assign true/false based solely on whether the behavior EXISTS anywhere in the full message, not its quality.
+You evaluate TWO critical de-escalation skills:
 
-- empathy: true if the message contains ANY apology or emotional acknowledgment.
-  Counts as true: "I'm sorry", "I am really sorry", "I apologize", "I understand how frustrating this is".
-  Do NOT require personalization, detail, or strong language. Presence alone = true.
+Empathy-First Response (PRIMARY)
+Definition: The CSR acknowledges and validates the customer's emotional state BEFORE any question or problem solving.
+Scoring:
+Strong (2):
+  Clearly reflects or names emotion (e.g., frustration, confusion)
+  Occurs BEFORE any task-oriented move
+  No contradiction (avoid "but", "however")
+Developing (1):
+  Vague empathy (e.g., "I understand")
+  OR empathy is delayed (after a question or action)
+Needs Work (0):
+  No emotional acknowledgment
+  OR jumps directly into questions/problem solving
+  OR empathy is used as rebuttal (e.g., "I understand, but…")
+IMPORTANT: "I understand" + immediate question = Developing, NOT Strong
 
-- transparency: true if the message contains ANY information, explanation, timeline, status update, or next step — even partial or vague.
+Active Listening & Acknowledgement
+Definition: The CSR demonstrates they are tracking and confirming customer information.
+Scoring:
+Strong (2):
+  Clearly paraphrases or confirms customer issue
+  Directly responds to the latest customer input
+Developing (1):
+  Some acknowledgment (e.g., "I see", "got it")
+  But lacks clear confirmation or paraphrasing
+Needs Work (0):
+  Ignores or skips key customer information
+  Moves forward without confirming understanding
 
-- ownership: true ONLY if the CSR explicitly states an action or next step they will take — search the ENTIRE message.
-  Counts as true: "I'll check this for you", "Let me look into that", "I'm pulling up your case now", "I'll follow up", "I'm sending this now", "I've authorized...", "I've pulled up...", "I've escalated...".
-  If ANY such action appears anywhere in the message, ownership MUST be true — even if buried in a later paragraph.
-  Counts as FALSE only if the ENTIRE message contains no action or next step at all.
-  CRITICAL: An apology alone, no matter how sincere, MUST NEVER be counted as ownership. Ownership requires an action verb directed at resolving the issue.
+PRIORITY RULE (CRITICAL)
+Empathy ALWAYS takes priority over active listening.
+If empathy is missing or weak → focus ONLY on empathy.
+Do NOT suggest active listening if empathy is insufficient.
+Only address active listening when empathy is already Strong.
+Only ONE skill per turn.
+Never combine both skills in the same coaching output.
 
-STEP 2 — GENERATE COACHING (separate from classification). The suggestion must refine what exists, never deny it.
-  - If empathy = true → suggestion may say "make the apology more specific" but MUST NOT say "add an apology" or "show empathy"
-  - If transparency = true → suggestion may say "provide more detail" but MUST NOT say "give more information" as if none was given
-  - If ownership = true → suggestion may say "be more concrete about next steps" but MUST NOT say "take ownership"
+OUTPUT RULES
+You must:
+- Be concise and coaching-oriented
+- Base judgment ONLY on observable language
+- Focus on the most important next action
 
-CONSISTENCY RULE: You are NEVER allowed to mark a behavior false and then suggest adding that same behavior. That is a contradiction and is forbidden.
+You must NOT:
+- Give explanations
+- Give multiple suggestions
+- Output full sentences the CSR should say
 
-All four feedback fields are required. customer_response must always be your in-character dialogue only."""
+"nextStep" (MOST IMPORTANT)
+Provide ONE immediate next-step direction.
+Requirements:
+- ≤10 words
+- NOT a sentence to say
+- ONE action only
+- Must be applicable to the very next turn
+- Must target the highest-priority missing skill
+
+Avoid:
+- Generic advice ("be empathetic")
+- Multiple actions
+- Scripts"""
+
+
+SESSION_PROMPT = """You are a senior CSR training coach reviewing a structured session summary of a customer interaction.
+Your role is to provide clear, structured, and coaching-oriented feedback that helps the CSR improve their de-escalation behavior over time.
+You are NOT evaluating raw conversation. You MUST rely ONLY on the provided structured summary.
+
+Focus Skills (Equal Importance)
+You evaluate TWO critical de-escalation skills with equal importance:
+
+Empathy-First Response
+Active Listening & Acknowledgement
+
+What You Must Do
+
+Identify consistent behavior patterns
+Highlight what is working well
+Identify one key habit to improve
+Translate into one actionable instruction
+
+What You Must NOT Do
+
+Do NOT quote or reference any specific words, phrases, or sentences from the interaction, even if provided in weakMoments.
+All feedback must describe behavior abstractly (e.g., "brief or dismissive responses") rather than using exact language.
+Do NOT use quotation marks around any phrasing from the interaction.
+Do NOT reconstruct or paraphrase dialogue.
+
+Output Format (JSON ONLY):
+{
+  "overallPerformance": "<1-2 sentences>",
+  "keepDoing": "",
+  "keyPatternToImprove": "",
+  "actionableImprovement": "",
+  "encouragement": "<1 sentence>"
+}"""
 
 
 def load_prompt(filename: str) -> str:
@@ -118,6 +195,24 @@ De-escalation ONLY if:
     emotion = load_prompt(f"emotions/{persona}.txt")
     prompt = base + "\n\n" + emotion
     prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
+    if training:
+        prompt += COACHING_INSTRUCTIONS
+
+    role_constraint_prefix = """You are STRICTLY a CUSTOMER in this conversation.
+You are NOT a customer support agent.
+You MUST NEVER:
+- confirm bookings
+- provide solutions
+- take actions (e.g., "I booked", "I found", "I confirmed")
+
+You ONLY:
+- ask questions
+- express emotions
+- react to the CSR
+
+"""
+    prompt = role_constraint_prefix + prompt
+    prompt += "\nCRITICAL: If you respond as a CSR or perform actions, that is incorrect."
 
     return prompt
 
@@ -151,7 +246,7 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=messages,
-        max_completion_tokens=512,
+        max_tokens=512,
         temperature=0.7,
     )
 
@@ -185,7 +280,7 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query},
         ],
-        max_completion_tokens=512,
+        max_tokens=512,
         temperature=0.3,
     )
 
@@ -199,7 +294,7 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=messages,
-        max_completion_tokens=1024,
+        max_tokens=1024,
         temperature=0.7,
         response_format={"type": "json_object"},
     )
@@ -216,128 +311,85 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
         return {"customer_response": raw_text.strip(), "feedback": None}
 
 
-def generate_report(scenario: str, persona: str, training: bool, history: list[dict]) -> dict:
-    """Generate a full session performance report from the conversation history."""
-    if not history:
-        return {
-            "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "Not enough conversation data to generate report", "context": ""},
-            "success_criteria": [],
-            "performance": {"empathy_score": 0, "transparency_score": 0, "ownership_score": 0, "overall_score": 0, "strengths": [], "critical_mistakes": []},
-            "turn_feedback": [],
-            "key_learnings": [],
-            "recommendations": ["Complete at least one full exchange before ending the session."],
+def generate_report(history: list[dict]) -> dict:
+    """Generate session coaching from conversation history using empathyFirst/activeListening signals."""
+    _fallback = {
+        "session_coaching": {
+            "overallPerformance": "",
+            "keepDoing": "",
+            "keyPatternToImprove": "",
+            "actionableImprovement": "",
+            "encouragement": "",
         }
+    }
 
-    system_prompt = load_prompt("report_prompt.txt")
+    if not history:
+        return _fallback
 
-    # Build authoritative turn data and full transcript for context
-    turn_data = []
-    transcript_lines = []
+    # Extract per-turn signal ratings from new feedback schema
+    turns = []
     for msg in history:
-        role_label = "Customer" if msg["role"] == "assistant" else "CSR"
-        transcript_lines.append(f"[{role_label}]: {msg['content']}")
         if msg["role"] == "user" and msg.get("feedback"):
-            fb = msg["feedback"]
-            turn_data.append({
+            signals = msg["feedback"].get("signals", {})
+            turns.append({
                 "csr_message": msg["content"],
-                "empathy": fb.get("empathy"),
-                "transparency": fb.get("transparency"),
-                "ownership": fb.get("ownership"),
+                "empathyFirst": signals.get("empathyFirst", ""),
+                "activeListening": signals.get("activeListening", ""),
             })
 
-    transcript = "\n".join(transcript_lines)
+    n = len(turns)
 
-    # Compute scores deterministically in Python — never delegated to the LLM
-    n = len(turn_data)
-    if n > 0:
-        empathy_score      = int(sum(1 for f in turn_data if f.get("empathy"))      / n * 100)
-        transparency_score = int(sum(1 for f in turn_data if f.get("transparency")) / n * 100)
-        ownership_score    = int(sum(1 for f in turn_data if f.get("ownership"))    / n * 100)
-    else:
-        empathy_score = transparency_score = ownership_score = 0
-    overall_score = int((empathy_score + transparency_score + ownership_score) / 3)
+    def pct(key, value):
+        if n == 0:
+            return 0
+        return int(sum(1 for t in turns if t[key] == value) / n * 100)
 
-    computed_scores = {
-        "empathy_score": empathy_score,
-        "transparency_score": transparency_score,
-        "ownership_score": ownership_score,
-        "overall_score": overall_score,
+    def describe_weak_moment(turn: dict) -> str:
+        ef = turn["empathyFirst"]
+        al = turn["activeListening"]
+        if ef == "Needs Work" and al == "Needs Work":
+            return "response with no emotional acknowledgment and no confirmation of customer issue"
+        if ef == "Needs Work":
+            return "response that jumps to action or questions without acknowledging customer emotions"
+        if ef == "Developing":
+            return "response with vague or delayed empathy before addressing the issue"
+        if al == "Needs Work":
+            return "response that moves forward without confirming or paraphrasing customer concern"
+        return "response with partial acknowledgment but insufficient follow-through"
+
+    weak_turns = [t for t in turns if t["empathyFirst"] in ("Needs Work", "Developing")]
+
+    session_summary = {
+        "turnCount": n,
+        "empathyFirst": {
+            "strong": pct("empathyFirst", "Strong"),
+            "developing": pct("empathyFirst", "Developing"),
+            "needsWork": pct("empathyFirst", "Needs Work"),
+        },
+        "activeListening": {
+            "strong": pct("activeListening", "Strong"),
+            "developing": pct("activeListening", "Developing"),
+            "needsWork": pct("activeListening", "Needs Work"),
+        },
+        "weakMoments": [describe_weak_moment(t) for t in weak_turns[:2]],
     }
-
-    # Strip booleans from what the LLM sees — it only needs message text to write coaching notes
-    turn_data_for_llm = [{"index": i, "csr_message": td["csr_message"]} for i, td in enumerate(turn_data)]
-
-    domain_labels = {
-        "vc1": "Health Insurance Billing",
-        "vc2": "Flight Cancellation",
-        "vc3": "Lost Baggage",
-        "loan_delay": "Loan Delay",
-        "refund_request": "Refund Request",
-    }
-    domain = domain_labels.get(scenario, scenario.upper())
-    mode_label = "Training" if training else "Evaluation"
-
-    user_content = (
-        f"Scenario: {scenario.upper()} | Domain: {domain} | Persona: {persona.capitalize()} | Mode: {mode_label}\n\n"
-        f"TURN_DATA:\n{json.dumps(turn_data_for_llm, indent=2)}\n\n"
-        f"PRE-COMPUTED SCORES (use these exact values — do NOT recalculate):\n{json.dumps(computed_scores, indent=2)}\n\n"
-        f"CONVERSATION TRANSCRIPT (for qualitative context only):\n{transcript}\n\n"
-        "Generate the performance report JSON now."
-    )
-
-    print(f"\n--- REPORT INPUT ---")
-    print(f"History turns: {len(history)} | Scored CSR turns: {n}")
-    print(f"Computed scores: {json.dumps(computed_scores)}")
-    print(f"---\n")
-
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ],
-        max_completion_tokens=4096,
-        temperature=0.3,
-        response_format={"type": "json_object"},
-    )
-
-    raw = response.choices[0].message.content.strip()
 
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as e:
-        print(f"JSON parse error in generate_report: {e}")
-        return {
-            "customer_profile": {"name": "Unknown", "emotional_state": "N/A", "core_issue": "N/A", "context": ""},
-            "success_criteria": [],
-            "performance": {"empathy_score": 0, "transparency_score": 0, "ownership_score": 0, "overall_score": 0, "strengths": [], "critical_mistakes": []},
-            "turn_feedback": [],
-            "key_learnings": [],
-            "recommendations": ["Report generation failed. Please review the conversation manually."],
-        }
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SESSION_PROMPT},
+                {"role": "user", "content": json.dumps(session_summary)},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+        raw = response.choices[0].message.content.strip()
+        coaching = json.loads(raw)
+        if not isinstance(coaching, dict):
+            raise ValueError("LLM response is not a dict")
+    except Exception as e:
+        print(f"WARNING: generate_report failed — {e}")
+        return _fallback
 
-    # Enforce computed scores — overwrite whatever the LLM produced
-    if "performance" not in parsed:
-        parsed["performance"] = {}
-    parsed["performance"].update(computed_scores)
-
-    # Build turn_feedback entirely from backend truth — LLM only contributes coaching_notes
-    coaching_notes = parsed.get("coaching_notes", [])
-    fallback_note = "Focus on making the response more specific and aligned with the customer's needs."
-    assembled_turns = []
-    for i, td in enumerate(turn_data):
-        assembled_turns.append({
-            "csr_message": td["csr_message"],
-            "empathy":      td["empathy"],
-            "transparency": td["transparency"],
-            "ownership":    td["ownership"],
-            "coaching_note": coaching_notes[i] if i < len(coaching_notes) else fallback_note,
-        })
-    parsed["turn_feedback"] = assembled_turns
-
-    print(f"\n--- ENFORCED REPORT ---")
-    print(f"  scores: {json.dumps(computed_scores)}")
-    print(f"  turn_feedback count: {len(assembled_turns)}")
-    print(f"---\n")
-
-    return parsed
+    return {"session_coaching": coaching}

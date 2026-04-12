@@ -172,11 +172,14 @@ class ChatRequest(BaseModel):
     session_id: int | None = None
 
 
+class SignalsModel(BaseModel):
+    empathyFirst: str
+    activeListening: str
+
+
 class FeedbackModel(BaseModel):
-    empathy: bool
-    transparency: bool
-    ownership: bool
-    suggestion: str
+    signals: SignalsModel
+    nextStep: str
 
 
 class ChatResponse(BaseModel):
@@ -299,12 +302,7 @@ async def report(
     if request.scenario not in VALID_SCENARIOS:
         raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
 
-    result = generate_report(
-        scenario=request.scenario,
-        persona=request.persona,
-        training=request.training,
-        history=request.history,
-    )
+    result = generate_report(history=request.history)
 
     perf = result.get("performance", {})
     report_record = models.ReportRecord(
