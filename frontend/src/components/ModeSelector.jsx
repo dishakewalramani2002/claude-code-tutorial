@@ -151,7 +151,7 @@ export const AVERY_COLLINS_PERSONA = {
 // when a particular scenario + persona combination has a distinct character
 const SCENARIO_PERSONA_OVERRIDES = {
   loan_delay: {
-    demanding: `${AVERY_COLLINS_PERSONA.name} — sharp and impatient about a delayed loan approval. Escalates aggressively if given vague answers. Only de-escalates when given exact status, reason, timeline, and ownership — with empathy first.`,
+    demanding: "Calm but firm. Knows what they want and pushes hard for it.",
   },
 };
 
