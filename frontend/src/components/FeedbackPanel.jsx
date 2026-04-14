@@ -33,9 +33,7 @@ export default function FeedbackPanel({ feedback }) {
       <p className="text-xs text-gray-400 -mt-3">Click any blue message to view its feedback.</p>
       <div className="bg-gray-50 rounded-lg p-3 space-y-1">
         <SkillBadge label="Empathy First" value={signals.empathyFirst} />
-        {signals.empathyFirst === "Strong" && (
-          <SkillBadge label="Active Listening" value={signals.activeListening} />
-        )}
+        <SkillBadge label="Active Listening" value={signals.activeListening} />
       </div>
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">

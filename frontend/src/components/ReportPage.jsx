@@ -6,6 +6,12 @@ const SCENARIO_LABELS = {
   vc3: "Lost Baggage",
 };
 
+const SIGNAL_COLORS = {
+  "Strong":       "bg-green-100 text-green-700",
+  "Developing":   "bg-yellow-100 text-yellow-700",
+  "Needs Work":   "bg-red-100 text-red-600",
+};
+
 function CoachingField({ label, value, colorClass = "bg-gray-50" }) {
   if (!value) return null;
   return (
@@ -16,12 +22,43 @@ function CoachingField({ label, value, colorClass = "bg-gray-50" }) {
   );
 }
 
+function SignalBadge({ label, value }) {
+  const colorClass = SIGNAL_COLORS[value] ?? "bg-gray-100 text-gray-500";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-500 w-28 flex-shrink-0">{label}</span>
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${colorClass}`}>
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
+
+function TurnCard({ turn }) {
+  return (
+    <div className="border border-gray-100 rounded-lg overflow-hidden">
+      <div className="bg-blue-50 px-4 py-3">
+        <p className="text-xs font-semibold text-blue-600 mb-1">CSR — Turn {turn.turn}</p>
+        <p className="text-sm text-gray-800">{turn.csr_message}</p>
+      </div>
+      <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 space-y-2">
+        <SignalBadge label="Empathy First"    value={turn.empathyFirst} />
+        <SignalBadge label="Active Listening" value={turn.activeListening} />
+        {turn.nextStep && (
+          <p className="text-xs text-gray-600 italic pt-1">Next step: {turn.nextStep}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ReportPage({ report, sessionConfig, navProps, onNewSession }) {
   const { scenario, persona, training, personaEmoji, personaLabel } = sessionConfig ?? {};
   const modeLabel = training ? "Training" : "Evaluation";
   const sessionLabel = `${modeLabel} — ${SCENARIO_LABELS[scenario] ?? scenario} · ${personaEmoji ?? ""} ${personaLabel ?? ""}`.trim();
 
   const coaching = report?.session_coaching;
+  const turns = report?.turn_by_turn ?? [];
 
   return (
     <>
@@ -57,7 +94,6 @@ export default function ReportPage({ report, sessionConfig, navProps, onNewSessi
             <div className="flex items-center gap-3 mb-6 pb-2 border-b-2 border-gray-800">
               <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Session Coaching</h2>
             </div>
-
             {!coaching ? (
               <p className="text-sm text-gray-400">No session feedback available.</p>
             ) : (
@@ -70,6 +106,20 @@ export default function ReportPage({ report, sessionConfig, navProps, onNewSessi
               </div>
             )}
           </div>
+
+          {/* Turn-by-Turn Feedback */}
+          {turns.length > 0 && (
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-6 pb-2 border-b-2 border-gray-800">
+                <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Turn-by-Turn Feedback</h2>
+              </div>
+              <div className="space-y-4">
+                {turns.map((turn) => (
+                  <TurnCard key={turn.turn} turn={turn} />
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
