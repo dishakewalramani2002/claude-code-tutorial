@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 import NavBar from "./NavBar";
 
@@ -141,15 +142,15 @@ export default function ProfilePage({ token, navProps, onBack }) {
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    axios.get("http://localhost:8000/me", { headers }).then(r => setUser(r.data));
-    axios.get("http://localhost:8000/sessions", { headers }).then(r => setSessions(r.data));
+    axios.get(`${BASE_URL}/me`, { headers }).then(r => setUser(r.data));
+    axios.get(`${BASE_URL}/sessions`, { headers }).then(r => setSessions(r.data));
   }, []);
 
   async function loadSession(id) {
     setLoadingDetail(true);
     setSelectedSession(id);
     try {
-      const r = await axios.get(`http://localhost:8000/sessions/${id}`, { headers });
+      const r = await axios.get(`${BASE_URL}/sessions/${id}`, { headers });
       setSessionDetail(r.data);
     } finally {
       setLoadingDetail(false);
@@ -164,7 +165,7 @@ export default function ProfilePage({ token, navProps, onBack }) {
     if (pwForm.next.length < 6) { setPwError("Password must be at least 6 characters."); return; }
     setPwLoading(true);
     try {
-      await axios.post("http://localhost:8000/change-password", {
+      await axios.post(`${BASE_URL}/change-password`, {
         current_password: pwForm.current,
         new_password: pwForm.next,
       }, { headers });

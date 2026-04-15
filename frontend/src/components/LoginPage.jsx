@@ -1,4 +1,5 @@
 import { useState } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 
 function LoginForm({ onLogin, onSwitch }) {
@@ -12,7 +13,7 @@ function LoginForm({ onLogin, onSwitch }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8000/login", { username, password });
+      const res = await axios.post(`${BASE_URL}/login`, { username, password });
       onLogin(res.data.access_token, username, res.data.name);
     } catch (err) {
       setError(err.response?.data?.detail || "Login failed. Please try again.");
@@ -86,7 +87,7 @@ function RegisterForm({ onLogin, onSwitch }) {
     }
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8000/register", { name, username, password });
+      const res = await axios.post(`${BASE_URL}/register`, { name, username, password });
       onLogin(res.data.access_token, username, res.data.name);
     } catch (err) {
       setError(err.response?.data?.detail || "Registration failed. Please try again.");
