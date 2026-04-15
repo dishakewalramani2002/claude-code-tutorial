@@ -5,7 +5,8 @@ import FeedbackPanel from "./FeedbackPanel";
 import WorkflowPortal from "./WorkflowPortal";
 import NavBar from "./NavBar";
 
-const API_URL = "http://localhost:8000/chat";
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = `/chat`;
 
 const SCENARIO_LABELS = {
   vc1: "Health Insurance Billing",
@@ -69,7 +70,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
       setLoading(true);
       try {
         const response = await axios.post(
-          "http://localhost:8000/start",
+          `${BASE_URL}/start`,
           { scenario, persona, training },
           { headers: authHeaders, signal: controller.signal }
         );

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState } from 'react';
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 import LoginPage from "./components/LoginPage";
 import ModeSelector from "./components/ModeSelector";
@@ -50,7 +51,7 @@ export default function App() {
     setView("report");
     try {
       const response = await axios.post(
-        "http://localhost:8000/report",
+        `${BASE_URL}/report`,
         {
           scenario: sessionConfig.scenario,
           persona: sessionConfig.persona,

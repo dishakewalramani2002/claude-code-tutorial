@@ -1,4 +1,5 @@
 import { useState } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 
 const SUGGESTIONS = {
@@ -44,7 +45,7 @@ export default function KnowledgeBase({ mode }) {
     setResult(null);
     setError(null);
     try {
-      const response = await axios.post("http://localhost:8000/lookup", {
+      const response = await axios.post(`${BASE_URL}/lookup`, {
         scenario: mode,
         query: trimmed,
       });
