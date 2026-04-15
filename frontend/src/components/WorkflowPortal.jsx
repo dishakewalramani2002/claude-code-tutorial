@@ -1459,7 +1459,7 @@ export default function WorkflowPortal({ scenario, persona, step, completed, onA
   const Screen = (screenMap[scenario] ?? screenMap.vc2)[Math.min(step, 5)];
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="h-full flex">
       <StepSidebar steps={steps} current={step} completed={completed} />
       <div className="flex-1 overflow-y-auto p-6 bg-white">
         <div className="max-w-3xl mx-auto space-y-4">
