@@ -25,11 +25,19 @@ function ScoreBar({ label, score }) {
   );
 }
 
-function Badge({ value }) {
-  return value ? (
-    <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">✓ Yes</span>
-  ) : (
-    <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full">✗ No</span>
+const SIGNAL_COLORS = {
+  "Strong":     "bg-green-100 text-green-700",
+  "Developing": "bg-yellow-100 text-yellow-700",
+  "Needs Work": "bg-red-100 text-red-600",
+};
+
+function SignalBadge({ label, value }) {
+  const colorClass = SIGNAL_COLORS[value] ?? "bg-gray-100 text-gray-500";
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-gray-600">
+      {label}
+      <span className={`px-2 py-0.5 rounded-full font-semibold ${colorClass}`}>{value || "—"}</span>
+    </span>
   );
 }
 
@@ -90,12 +98,11 @@ function SessionDetail({ session, onBack }) {
               {msg.feedback && (
                 <div className="self-end max-w-xl bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs space-y-2">
                   <div className="flex gap-3">
-                    <span className="text-gray-600">Empathy <Badge value={msg.feedback.empathy} /></span>
-                    <span className="text-gray-600">Transparency <Badge value={msg.feedback.transparency} /></span>
-                    <span className="text-gray-600">Ownership <Badge value={msg.feedback.ownership} /></span>
+                    <SignalBadge label="Empathy First"    value={msg.feedback.signals?.empathyFirst} />
+                    <SignalBadge label="Active Listening" value={msg.feedback.signals?.activeListening} />
                   </div>
-                  {msg.feedback.suggestion && (
-                    <p className="text-gray-600 italic">"{msg.feedback.suggestion}"</p>
+                  {msg.feedback.nextStep && (
+                    <p className="text-gray-600 italic">"{msg.feedback.nextStep}"</p>
                   )}
                 </div>
               )}

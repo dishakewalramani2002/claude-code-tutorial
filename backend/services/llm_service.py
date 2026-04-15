@@ -37,44 +37,99 @@ COACHING_INSTRUCTIONS = """
 You are a senior CSR training coach specializing in customer de-escalation.
 Your role is to evaluate a CSR's response and provide one immediate coaching direction to improve the NEXT reply.
 
+CRITICAL FAILURE CASES (HIGHEST PRIORITY — APPLY BEFORE ALL OTHER RULES)
+If the CSR response meets ANY of the following conditions:
+- Is extremely short (e.g., "ok", "sure", "ok bye")
+- Is fewer than 5 words
+- Does not reference the customer's issue at all
+- Does not acknowledge any emotion or emotional state
+- Is dismissive or ends the conversation without resolution
+Then you MUST assign "empathyFirst": "Needs Work" and "activeListening": "Needs Work".
+This rule OVERRIDES all scoring definitions below. Do NOT proceed to rubric evaluation if this case applies.
+
 You evaluate TWO critical de-escalation skills:
 
 Empathy-First Response (PRIMARY)
 Definition: The CSR acknowledges and validates the customer's emotional state BEFORE any question or problem solving.
 Scoring:
 Strong (2):
-  Clearly reflects or names emotion (e.g., frustration, confusion)
+  Clearly reflects or names emotion (e.g., frustration, confusion, stress, disappointment)
   Occurs BEFORE any task-oriented move
   No contradiction (avoid "but", "however")
+  IMPORTANT: Must reflect the customer's emotional impact — not just their request or goal.
+  Task acknowledgment ≠ emotional validation. Intent-based statements alone cannot qualify as Strong.
 Developing (1):
   Vague empathy (e.g., "I understand")
   OR empathy is delayed (after a question or action)
+  OR reflects the customer's request/goal/intent WITHOUT naming emotional impact
+    (e.g., "I understand you want a clear timeline", "I understand you need this resolved" → Developing, NOT Strong)
 Needs Work (0):
-  No emotional acknowledgment
-  OR jumps directly into questions/problem solving
-  OR empathy is used as rebuttal (e.g., "I understand, but…")
-IMPORTANT: "I understand" + immediate question = Developing, NOT Strong
+  No emotional acknowledgment at all
+  OR empathy is used as a rebuttal (e.g., "I understand, but…")
+IMPORTANT: If ANY valid empathy is present (explicit OR implicit), the response MUST be at least "Developing".
+Do NOT assign "Needs Work" because the CSR moves into action or problem-solving after showing empathy.
+Empathy + immediate action (e.g., "I understand this is frustrating. Let me process that for you.") = Developing, NOT Needs Work.
+"I understand" + immediate question = Developing, NOT Strong and NOT Needs Work.
+
+IMPLICIT EMPATHY RECOGNITION (CRITICAL):
+Explicit emotion keywords (e.g., "frustrating", "upsetting") are preferred but NOT required.
+Implicit acknowledgment of the customer's emotional state — including urgency, stress, or intent — counts as valid empathy IF:
+  - It reflects the customer's underlying emotional state (not just their task goal)
+  - It appears before any problem-solving or task-oriented move
+Examples that count as Developing (reflect intent, not emotion):
+  "I understand you want this handled quickly" → Developing
+  "I understand you need this resolved right away" → Developing
+Examples that count as Strong (reflect emotional impact):
+  "I can hear how frustrated you are" → Strong
+  "I understand how stressful this situation must be" → Strong
+Do NOT assign "Needs Work" to responses that contain implicit empathy of this kind.
+
+EVIDENCE REQUIREMENT:
+A response must contain observable evidence — explicit OR implicit — to earn "Strong".
+Implicit empathy counts as Strong ONLY if it clearly reflects emotional impact, not just task urgency or request clarity.
+Do NOT infer intent beyond what is written. But DO recognize implicit empathy when it is clearly present.
 
 Active Listening & Acknowledgement
-Definition: The CSR demonstrates they are tracking and confirming customer information.
+Definition: The CSR demonstrates they are tracking and confirming customer information by explicitly referencing the majority of specific details from the customer's message.
 Scoring:
 Strong (2):
-  Clearly paraphrases or confirms customer issue
-  Directly responds to the latest customer input
+  Reflects MOST key customer concerns present in the message — not just a minimum count
+  Key concerns to look for (if present): exact amount, timeline request, payment method, confirmation/proof request, stated constraints
+  Partial coverage (only 1–2 details) CANNOT qualify as Strong — classify as Developing instead
+  If important customer constraints or specifics are omitted, the response cannot be Strong
+  General or abstract summaries do NOT qualify — the following CANNOT score Strong:
+    "you want clarity", "you want this resolved", "you need a refund handled properly"
 Developing (1):
-  Some acknowledgment (e.g., "I see", "got it")
-  But lacks clear confirmation or paraphrasing
+  Partially acknowledges the customer's request or concern
+  Includes AT LEAST ONE concrete detail from the customer's message
+  (e.g., timeline, refund, credit card, amount, confirmation)
+  BUT does not capture most key details
 Needs Work (0):
-  Ignores or skips key customer information
-  Moves forward without confirming understanding
+  Only uses generic phrases (e.g., "I see", "I understand")
+  OR restates the issue in vague terms (e.g., "status of your refund")
+  OR fails to include ANY concrete detail from the customer's message
+  OR ignores key parts of the request
+
+IMPORTANT: If the CSR includes at least one concrete detail from the customer's message, it MUST be classified as at least "Developing", not "Needs Work".
+
+STRICT EVIDENCE RULE: Active Listening must be judged ONLY on what is explicitly stated in the CSR response.
+Do NOT infer understanding. Do NOT assume the CSR acknowledged a detail unless it is clearly mentioned.
+If a detail is not explicitly stated in the CSR response, it must be treated as NOT acknowledged.
 
 PRIORITY RULE (CRITICAL)
 Empathy ALWAYS takes priority over active listening.
 If empathy is missing or weak → focus ONLY on empathy.
 Do NOT suggest active listening if empathy is insufficient.
-Only address active listening when empathy is already Strong.
-Only ONE skill per turn.
-Never combine both skills in the same coaching output.
+Active listening may be evaluated when empathy is at least Developing.
+You may evaluate both skills, but prioritize empathy if it is weak.
+
+SCORING CONSISTENCY RULE (CRITICAL — ENFORCE ON EVERY OUTPUT):
+If empathyFirst is NOT "Strong":
+  activeListening MUST NOT be "Strong" — downgrade to at most "Developing"
+  nextStep MUST target empathy only — do NOT suggest active listening improvements
+If empathyFirst IS "Strong":
+  activeListening may be scored freely based on the Active Listening rubric
+  nextStep may target either skill based on which needs more improvement
 
 OUTPUT RULES
 You must:
@@ -289,6 +344,26 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
     system_prompt = build_system_prompt(scenario, persona, training)
+
+    # Extract the most recent nextStep from history and inject it as a coaching signal
+    last_next_step = None
+    for turn in reversed(history):
+        if turn.get("role") == "user" and isinstance(turn.get("feedback"), dict):
+            next_step = turn["feedback"].get("nextStep", "").strip()
+            if next_step:
+                last_next_step = next_step
+                break
+
+    if last_next_step:
+        system_prompt += f"""
+
+COACHING SIGNAL (CRITICAL):
+You MUST apply this in your next response:
+{last_next_step}
+
+Do not repeat previous behavior.
+Your response will be evaluated based on whether you apply this instruction."""
+
     messages = build_messages(history, system_prompt, message)
 
     response = client.chat.completions.create(
@@ -335,6 +410,7 @@ def generate_report(history: list[dict]) -> dict:
                 "csr_message": msg["content"],
                 "empathyFirst": signals.get("empathyFirst", ""),
                 "activeListening": signals.get("activeListening", ""),
+                "nextStep": msg["feedback"].get("nextStep", ""),
             })
 
     n = len(turns)
@@ -392,4 +468,15 @@ def generate_report(history: list[dict]) -> dict:
         print(f"WARNING: generate_report failed — {e}")
         return _fallback
 
-    return {"session_coaching": coaching}
+    turn_by_turn = [
+        {
+            "turn": i + 1,
+            "csr_message": t["csr_message"],
+            "empathyFirst": t["empathyFirst"],
+            "activeListening": t["activeListening"],
+            "nextStep": t["nextStep"],
+        }
+        for i, t in enumerate(turns)
+    ]
+
+    return {"session_coaching": coaching, "turn_by_turn": turn_by_turn}
