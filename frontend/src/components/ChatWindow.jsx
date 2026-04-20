@@ -5,8 +5,8 @@ import FeedbackPanel from "./FeedbackPanel";
 import WorkflowPortal from "./WorkflowPortal";
 import NavBar from "./NavBar";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_URL = `/chat`;
+const BASE_URL = import.meta.env.VITE_API_URL;
+const API_URL = `${BASE_URL}/chat`;
 
 const SCENARIO_LABELS = {
   vc1: "Health Insurance Billing",
@@ -25,14 +25,15 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
   const [portalStep, setPortalStep] = useState(0);
   const [portalCompleted, setPortalCompleted] = useState([]);
   const [error, setError] = useState(null);
-  // Split pane: portalHeight is the px height of the top (portal) section
   const [portalHeight, setPortalHeight] = useState(280);
+
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+
   const authHeaders = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
@@ -43,14 +44,17 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
       const newH = Math.min(Math.max(dragStartHeight.current + delta, 80), containerH - 160);
       setPortalHeight(newH);
     }
+
     function onMouseUp() {
       if (!isDragging.current) return;
       isDragging.current = false;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     }
+
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
@@ -66,6 +70,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
 
   useEffect(() => {
     const controller = new AbortController();
+
     async function fetchOpener() {
       setLoading(true);
       try {
@@ -74,15 +79,20 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
           { scenario, persona, training },
           { headers: authHeaders, signal: controller.signal }
         );
+
         setSessionId(response.data.session_id);
-        setMessages([{ role: "assistant", content: response.data.customer_response }]);
+        setMessages([
+          { role: "assistant", content: response.data.customer_response }
+        ]);
+
       } catch (err) {
         if (axios.isCancel(err)) return;
-        setError("Failed to start session. Make sure the backend is running on port 8000.");
+        setError("Failed to start session. Please try again.");
       } finally {
         setLoading(false);
       }
     }
+
     fetchOpener();
     return () => controller.abort();
   }, [scenario, persona, training]);
@@ -102,22 +112,32 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     try {
       const response = await axios.post(
         API_URL,
-        { scenario, persona, training, message: trimmed, history: updatedMessages, session_id: sessionId },
+        {
+          scenario,
+          persona,
+          training,
+          message: trimmed,
+          history: updatedMessages,
+          session_id: sessionId
+        },
         { headers: authHeaders }
       );
 
       const { customer_response, feedback: newFeedback } = response.data;
 
       const csrIdx = updatedMessages.length - 1;
+
       if (newFeedback) setSelectedIdx(csrIdx);
+
       setMessages([
         ...updatedMessages.map((m, i) =>
           i === csrIdx ? { ...m, feedback: newFeedback } : m
         ),
         { role: "assistant", content: customer_response },
       ]);
+
     } catch {
-      setError("Failed to reach the server. Make sure the backend is running on port 8000.");
+      setError("Failed to reach the server. Please try again.");
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -136,7 +156,6 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-0 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
           <span className="font-semibold text-gray-800">CSR Simulator</span>
@@ -154,18 +173,20 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
         </div>
       </header>
 
-      {/* Split pane container */}
       <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
 
-        {/* Top: Internal Portal */}
         <div style={{ height: portalHeight }} className="flex flex-col overflow-hidden flex-shrink-0">
-          {/* Portal section label */}
           <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Internal Portal</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Internal Portal
+            </span>
             {portalStep > 0 && (
-              <span className="text-xs text-gray-400">· Step {portalStep + 1}/6</span>
+              <span className="text-xs text-gray-400">
+                · Step {portalStep + 1}/6
+              </span>
             )}
           </div>
+
           <div className="flex-1 overflow-y-auto">
             <WorkflowPortal
               scenario={scenario}
@@ -176,12 +197,14 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                 setPortalCompleted(prev => [...prev, stepId]);
                 setPortalStep(s => s + 1);
               }}
-              onReset={() => { setPortalStep(0); setPortalCompleted([]); }}
+              onReset={() => {
+                setPortalStep(0);
+                setPortalCompleted([]);
+              }}
             />
           </div>
         </div>
 
-        {/* Drag handle */}
         <div
           onMouseDown={(e) => {
             isDragging.current = true;
@@ -191,22 +214,19 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
             document.body.style.userSelect = "none";
           }}
           className="h-2 flex-shrink-0 bg-gray-200 hover:bg-blue-400 cursor-row-resize flex items-center justify-center transition-colors group"
-          title="Drag to resize"
         >
           <div className="w-8 h-0.5 rounded-full bg-gray-400 group-hover:bg-white transition-colors" />
         </div>
 
-        {/* Bottom: Chat + Feedback */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Chat area */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex-shrink-0">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chat</span>
+            <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Chat
+              </span>
             </div>
+
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-gray-100">
-              {messages.length === 0 && !loading && (
-                <div className="text-center text-gray-400 text-sm mt-8">Starting session...</div>
-              )}
               {messages.map((msg, i) => (
                 <MessageBubble
                   key={i}
@@ -217,27 +237,24 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                   onClick={msg.feedback ? () => setSelectedIdx(i) : undefined}
                 />
               ))}
+
               {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 text-gray-400 text-sm">
-                    Customer is typing...
-                  </div>
-                </div>
+                <div className="text-gray-400 text-sm">Customer is typing...</div>
               )}
+
               {error && (
                 <div className="text-center text-red-500 text-sm">{error}</div>
               )}
+
               <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <div className="bg-white border-t border-gray-200 px-6 py-3 flex-shrink-0">
+            <div className="bg-white border-t border-gray-200 px-6 py-3">
               <div className="flex gap-3 items-end">
                 <textarea
                   ref={inputRef}
-                  className="flex-1 resize-none border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border rounded-xl px-4 py-3 text-sm"
                   rows={2}
-                  placeholder="Type your response as the CSR agent..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -246,26 +263,17 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                 <button
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
-                  className="bg-blue-600 text-white px-5 py-3 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition"
+                  className="bg-blue-600 text-white px-5 py-3 rounded-xl"
                 >
                   Send
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Press Enter to send, Shift+Enter for new line.
-              </p>
             </div>
           </div>
 
-          {/* Feedback Sidebar (training only) */}
           {training && (
-            <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0 flex flex-col">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex-shrink-0">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Feedback</span>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <FeedbackPanel feedback={activeFeedback} />
-              </div>
+            <div className="w-72 bg-white border-l">
+              <FeedbackPanel feedback={activeFeedback} />
             </div>
           )}
         </div>
