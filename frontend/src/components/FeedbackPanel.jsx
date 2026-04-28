@@ -28,6 +28,8 @@ export default function FeedbackPanel({ feedback }) {
   console.log("FEEDBACK PANEL DATA:", feedback);
 
   const signals = feedback.signals ?? {};
+  const empathyReason = feedback?.analysis?.empathy_score?.reason;
+  const listeningReason = feedback?.analysis?.active_listening_score?.reason;
   const practice = feedback?.analysis?.learn_from_this_practice;
 
   return (
@@ -38,6 +40,30 @@ export default function FeedbackPanel({ feedback }) {
         <SkillBadge label="Empathy First" value={signals.empathyFirst} />
         <SkillBadge label="Active Listening" value={signals.activeListening} />
       </div>
+      {(empathyReason || listeningReason) && (
+        <div className="space-y-3 border-t border-gray-100 pt-4">
+          {empathyReason && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                Empathy Reason
+              </p>
+              <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 leading-relaxed">
+                {empathyReason}
+              </p>
+            </div>
+          )}
+          {listeningReason && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                Listening Reason
+              </p>
+              <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 leading-relaxed">
+                {listeningReason}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       {practice && (
         <div className="space-y-3 border-t border-gray-100 pt-4">
           <div>
