@@ -6,6 +6,7 @@ import WorkflowPortal from "./WorkflowPortal";
 import NavBar from "./NavBar";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
+console.log("BASE_URL:", BASE_URL);
 const API_URL = `${BASE_URL}/chat`;
 
 const SCENARIO_LABELS = {
