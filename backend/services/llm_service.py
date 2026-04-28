@@ -432,6 +432,7 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
 
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
+    print("🚀 VERSION: ANALYSIS_FIX_V2")
     system_prompt = build_system_prompt(scenario, persona, training)
 
     # Extract the most recent nextStep from history and inject it as a coaching signal
@@ -466,12 +467,12 @@ Your response will be evaluated based on whether you apply this instruction."""
     raw_text = response.choices[0].message.content
 
     _default_analysis = {
-        "empathy_score": {"score": 0, "reason": "Analysis unavailable for this turn."},
-        "active_listening_score": {"score": 0, "reason": "Analysis unavailable for this turn."},
+        "empathy_score": {"score": 0, "reason": "Fallback applied."},
+        "active_listening_score": {"score": 0, "reason": "Fallback applied."},
         "learn_from_this_practice": {
-            "area": "Unavailable",
-            "focus": "No coaching focus could be determined for this turn.",
-            "why_it_improves_deescalation": "Consistent analysis helps identify patterns over time.",
+            "area": "Fallback",
+            "focus": "Fallback applied due to missing analysis.",
+            "why_it_improves_deescalation": "Ensures UI consistency.",
         },
     }
 
@@ -483,16 +484,29 @@ Your response will be evaluated based on whether you apply this instruction."""
                 feedback = {}
             if "analysis" not in feedback:
                 feedback["analysis"] = _default_analysis
+
+        if training and "analysis" not in feedback:
+            raise ValueError("ANALYSIS MISSING — SHOULD NEVER HAPPEN")
+
+        print("=== FINAL FEEDBACK ===")
+        print(json.dumps(feedback, indent=2))
+
         return {
             "customer_response": parsed["customer_response"],
             "feedback": feedback,
         }
+    except ValueError:
+        raise
     except Exception:
         fallback_feedback = {
             "signals": {"empathyFirst": "", "activeListening": ""},
             "nextStep": "",
             "analysis": _default_analysis,
         } if training else None
+
+        print("=== FINAL FEEDBACK (exception fallback) ===")
+        print(json.dumps(fallback_feedback, indent=2))
+
         return {"customer_response": raw_text.strip(), "feedback": fallback_feedback}
 
 
