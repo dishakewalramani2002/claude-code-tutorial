@@ -70,6 +70,10 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
   }, [messages, loading]);
 
   useEffect(() => {
+    console.log("📊 CURRENT MESSAGES:", messages);
+  }, [messages]);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function fetchOpener() {
@@ -102,15 +106,24 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     const trimmed = input.trim();
     if (!trimmed || loading) return;
 
-    const userMessage = { role: "user", content: trimmed };
-    const updatedMessages = [...messages, userMessage];
+    console.log("🚀 Sending message:", trimmed);
 
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = { role: "user", content: trimmed };
+
     setInput("");
     setLoading(true);
     setError(null);
 
     try {
+      console.log("📤 Request payload:", {
+        scenario,
+        persona,
+        training,
+        message: trimmed,
+        history: [...messages, userMessage],
+        session_id: sessionId
+      });
+
       const response = await axios.post(
         API_URL,
         {
@@ -118,26 +131,52 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
           persona,
           training,
           message: trimmed,
-          history: updatedMessages,
+          history: [...messages, userMessage],
           session_id: sessionId
         },
         { headers: authHeaders }
       );
 
-      const { customer_response, feedback: newFeedback } = response.data;
+      console.log("📥 FULL RESPONSE:", response.data);
 
-      const csrIdx = updatedMessages.length - 1;
+      const { customer_response, feedback } = response.data;
 
-      if (newFeedback) setSelectedIdx(csrIdx);
+      console.log("🧠 FEEDBACK:", feedback);
+      console.log("🧠 ANALYSIS:", feedback?.analysis);
+      console.log("🧠 PRACTICE:", feedback?.analysis?.learn_from_this_practice);
 
-      setMessages([
-        ...updatedMessages.map((m, i) =>
-          i === csrIdx ? { ...m, feedback: newFeedback } : m
-        ),
-        { role: "assistant", content: customer_response },
-      ]);
+      setMessages(prev => {
+        const newMessages = [...prev];
 
-    } catch {
+        const userMsgWithFeedback = {
+          role: "user",
+          content: trimmed,
+          feedback: feedback
+        };
+
+        const assistantMsg = {
+          role: "assistant",
+          content: customer_response
+        };
+
+        console.log("📝 Adding USER message:", userMsgWithFeedback);
+        console.log("🤖 Adding ASSISTANT message:", assistantMsg);
+
+        newMessages.push(userMsgWithFeedback);
+        newMessages.push(assistantMsg);
+
+        console.log("📦 FINAL MESSAGES STATE:", newMessages);
+
+        return newMessages;
+      });
+
+      if (feedback) {
+        console.log("🎯 Setting selectedIdx to:", messages.length);
+        setSelectedIdx(messages.length);
+      }
+
+    } catch (err) {
+      console.error("❌ ERROR:", err);
       setError("Failed to reach the server. Please try again.");
     } finally {
       setLoading(false);
