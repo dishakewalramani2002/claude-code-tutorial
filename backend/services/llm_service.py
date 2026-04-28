@@ -21,6 +21,7 @@ RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No 
 RESPONSE_FORMAT_TRAINING = """
 
 RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
+The "analysis" field is REQUIRED in every response. You MUST always include it. Do not omit it under any circumstances.
 {
   "customer_response": "Your in-character reply here (2-4 sentences).",
   "feedback": {
@@ -172,7 +173,7 @@ Avoid:
 - Scripts
 
 ANALYSIS BLOCK RULES (REQUIRED — populate for every response)
-You must populate the "analysis" field in every feedback output. The analysis block is for explainability and training analysis only — it does NOT override or replace any existing scoring or nextStep logic.
+You must populate the "analysis" field in every feedback output. The analysis block is REQUIRED and must be populated for every response. It is a mandatory part of the output and cannot be omitted.
 
 Score mapping (use integers only):
   Strong   → 2
