@@ -1,6 +1,7 @@
 import json as json_lib
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, Dict, Any
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -180,6 +181,7 @@ class SignalsModel(BaseModel):
 class FeedbackModel(BaseModel):
     signals: SignalsModel
     nextStep: str
+    analysis: Optional[Dict[str, Any]] = None
 
 
 class ChatResponse(BaseModel):
