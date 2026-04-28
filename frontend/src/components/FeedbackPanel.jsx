@@ -25,6 +25,8 @@ export default function FeedbackPanel({ feedback }) {
     );
   }
 
+  console.log("FEEDBACK PANEL DATA:", feedback);
+
   const signals = feedback.signals ?? {};
   const practice = feedback?.analysis?.learn_from_this_practice;
 
@@ -35,14 +37,6 @@ export default function FeedbackPanel({ feedback }) {
       <div className="bg-gray-50 rounded-lg p-3 space-y-1">
         <SkillBadge label="Empathy First" value={signals.empathyFirst} />
         <SkillBadge label="Active Listening" value={signals.activeListening} />
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-          Next Step
-        </p>
-        <p className="text-sm text-gray-700 bg-blue-50 rounded-lg p-3 leading-relaxed">
-          {feedback.nextStep ?? "—"}
-        </p>
       </div>
       {practice && (
         <div className="space-y-3 border-t border-gray-100 pt-4">
@@ -56,7 +50,7 @@ export default function FeedbackPanel({ feedback }) {
           </div>
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Next step
+              Focus
             </p>
             <p className="text-sm text-gray-700 bg-blue-50 rounded-lg p-3 leading-relaxed">
               {practice.focus ?? "—"}
