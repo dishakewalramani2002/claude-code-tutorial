@@ -465,14 +465,35 @@ Your response will be evaluated based on whether you apply this instruction."""
 
     raw_text = response.choices[0].message.content
 
+    _default_analysis = {
+        "empathy_score": {"score": 0, "reason": "Analysis unavailable for this turn."},
+        "active_listening_score": {"score": 0, "reason": "Analysis unavailable for this turn."},
+        "learn_from_this_practice": {
+            "area": "Unavailable",
+            "focus": "No coaching focus could be determined for this turn.",
+            "why_it_improves_deescalation": "Consistent analysis helps identify patterns over time.",
+        },
+    }
+
     try:
         parsed = json.loads(raw_text)
+        feedback = parsed.get("feedback") if training else None
+        if training:
+            if not isinstance(feedback, dict):
+                feedback = {}
+            if "analysis" not in feedback:
+                feedback["analysis"] = _default_analysis
         return {
             "customer_response": parsed["customer_response"],
-            "feedback": parsed.get("feedback") if training else None,
+            "feedback": feedback,
         }
-    except:
-        return {"customer_response": raw_text.strip(), "feedback": None}
+    except Exception:
+        fallback_feedback = {
+            "signals": {"empathyFirst": "", "activeListening": ""},
+            "nextStep": "",
+            "analysis": _default_analysis,
+        } if training else None
+        return {"customer_response": raw_text.strip(), "feedback": fallback_feedback}
 
 
 def generate_report(history: list[dict]) -> dict:
