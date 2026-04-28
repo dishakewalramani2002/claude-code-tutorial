@@ -109,7 +109,9 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     console.log("🚀 Sending message:", trimmed);
 
     const userMessage = { role: "user", content: trimmed };
+    const updatedMessages = [...messages, userMessage];
 
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
     setError(null);
@@ -120,7 +122,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
         persona,
         training,
         message: trimmed,
-        history: [...messages, userMessage],
+        history: updatedMessages,
         session_id: sessionId
       });
 
@@ -131,7 +133,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
           persona,
           training,
           message: trimmed,
-          history: [...messages, userMessage],
+          history: updatedMessages,
           session_id: sessionId
         },
         { headers: authHeaders }
@@ -145,34 +147,25 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
       console.log("🧠 ANALYSIS:", feedback?.analysis);
       console.log("🧠 PRACTICE:", feedback?.analysis?.learn_from_this_practice);
 
+      const csrIdx = updatedMessages.length - 1;
+
       setMessages(prev => {
-        const newMessages = [...prev];
+        const next = prev.map((m, i) =>
+          i === csrIdx ? { ...m, feedback } : m
+        );
 
-        const userMsgWithFeedback = {
-          role: "user",
-          content: trimmed,
-          feedback: feedback
-        };
+        const assistantMsg = { role: "assistant", content: customer_response };
 
-        const assistantMsg = {
-          role: "assistant",
-          content: customer_response
-        };
-
-        console.log("📝 Adding USER message:", userMsgWithFeedback);
+        console.log("📝 Attaching feedback to USER message at idx:", csrIdx);
         console.log("🤖 Adding ASSISTANT message:", assistantMsg);
+        console.log("📦 FINAL MESSAGES STATE:", [...next, assistantMsg]);
 
-        newMessages.push(userMsgWithFeedback);
-        newMessages.push(assistantMsg);
-
-        console.log("📦 FINAL MESSAGES STATE:", newMessages);
-
-        return newMessages;
+        return [...next, assistantMsg];
       });
 
       if (feedback) {
-        console.log("🎯 Setting selectedIdx to:", messages.length);
-        setSelectedIdx(messages.length);
+        console.log("🎯 Setting selectedIdx to:", csrIdx);
+        setSelectedIdx(csrIdx);
       }
 
     } catch (err) {
