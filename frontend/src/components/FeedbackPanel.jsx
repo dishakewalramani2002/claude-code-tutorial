@@ -26,6 +26,7 @@ export default function FeedbackPanel({ feedback }) {
   }
 
   const signals = feedback.signals ?? {};
+  const practice = feedback?.analysis?.learn_from_this_practice;
 
   return (
     <div className="p-5 space-y-4">
@@ -43,6 +44,34 @@ export default function FeedbackPanel({ feedback }) {
           {feedback.nextStep ?? "—"}
         </p>
       </div>
+      {practice && (
+        <div className="space-y-3 border-t border-gray-100 pt-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              Area
+            </p>
+            <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 leading-relaxed">
+              {practice.area ?? "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              Next step
+            </p>
+            <p className="text-sm text-gray-700 bg-blue-50 rounded-lg p-3 leading-relaxed">
+              {practice.focus ?? "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              Why this helps
+            </p>
+            <p className="text-sm text-gray-700 bg-green-50 rounded-lg p-3 leading-relaxed">
+              {practice.why_it_improves_deescalation ?? "—"}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

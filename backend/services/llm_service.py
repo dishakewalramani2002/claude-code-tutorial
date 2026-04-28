@@ -28,7 +28,22 @@ RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No 
       "empathyFirst": "Strong | Developing | Needs Work",
       "activeListening": "Strong | Developing | Needs Work"
     },
-    "nextStep": ""
+    "nextStep": "",
+    "analysis": {
+      "empathy_score": {
+        "score": 0,
+        "reason": "One sentence explaining the score."
+      },
+      "active_listening_score": {
+        "score": 0,
+        "reason": "One sentence explaining the score."
+      },
+      "learn_from_this_practice": {
+        "area": "Short area name",
+        "focus": "One sentence on what the CSR should focus on or avoid doing in the future.",
+        "why_it_improves_deescalation": "One sentence explaining why this helps de-escalation using a real communication principle."
+      }
+    }
   }
 }"""
 
@@ -154,7 +169,49 @@ Requirements:
 Avoid:
 - Generic advice ("be empathetic")
 - Multiple actions
-- Scripts"""
+- Scripts
+
+ANALYSIS BLOCK RULES (REQUIRED — populate for every response)
+You must populate the "analysis" field in every feedback output. The analysis block is for explainability and training analysis only — it does NOT override or replace any existing scoring or nextStep logic.
+
+Score mapping (use integers only):
+  Strong   → 2
+  Developing → 1
+  Needs Work → 0
+
+"empathy_score"
+- "score": integer derived from the empathyFirst label above (Strong=2, Developing=1, Needs Work=0)
+- "reason": exactly one sentence; must cite observable language in the CSR response as evidence; must be grounded in a real de-escalation principle (e.g., emotional validation, acknowledgment-before-solution, perspective-taking); do NOT mention politeness or general helpfulness
+
+"active_listening_score"
+- "score": integer derived from the activeListening label above (Strong=2, Developing=1, Needs Work=0)
+- "reason": exactly one sentence; must cite which specific customer details were or were not reflected in the CSR response; do NOT mention politeness or general helpfulness
+- CONSISTENCY: if empathyFirst is NOT "Strong", active_listening_score must be at most 1 (Developing)
+
+"learn_from_this_practice"
+- "area": fewer than 5 words; names ONE specific behavior only (e.g., "Naming customer emotion", "Mirroring specific details")
+- "focus": exactly one sentence; tells the CSR concretely what to do or avoid in the next response; must align with "nextStep"
+- "why_it_improves_deescalation": exactly one sentence; explains WHY the behavior change improves the customer experience using a real communication principle; do NOT use vague phrases like "makes the customer feel better"
+
+ANALYSIS CONSISTENCY RULES (CRITICAL — ENFORCE ON EVERY OUTPUT):
+
+SIGNALS ↔ ANALYSIS CONSISTENCY
+- The numeric score in "empathy_score" MUST equal the integer mapping of the empathyFirst signal (Strong=2, Developing=1, Needs Work=0). The numeric score in "active_listening_score" MUST equal the integer mapping of the activeListening signal. Scores in the analysis block may NEVER contradict the signals labels.
+- If empathyFirst is NOT "Strong": activeListening MUST NOT be "Strong" AND active_listening_score MUST NOT be 2.
+
+REASON QUALITY REQUIREMENT
+- Each "reason" must explicitly reference a specific word, phrase, or observable absence in the CSR's response — generic statements such as "the CSR did not show empathy" are not allowed.
+- The reason must point to what the CSR said or visibly failed to say (e.g., "The CSR opened with 'Let me check that for you' without naming or reflecting the customer's frustration").
+- Reasons must remain exactly one sentence.
+
+PRIORITIZATION RULE
+- If both empathy and active listening are weak (either Developing or Needs Work): the "area", "focus", and "nextStep" MUST all target empathy, unless the CSR response demonstrates that the customer's core issue was clearly misunderstood, in which case active listening may be prioritized instead.
+
+ALIGNMENT RULE
+- "area", "focus", and "nextStep" MUST all address the SAME single skill gap — they must not reference different problems or split focus across multiple issues.
+- If empathyFirst is NOT "Strong": "area" and "focus" MUST target empathy, NOT active listening.
+- "reason" fields must refer ONLY to observable wording in the CSR response — do NOT infer intent or assume unstated behavior.
+- Do NOT force de-escalation theory labels if they do not naturally apply; describe the principle in plain terms instead."""
 
 
 SESSION_PROMPT = """You are a senior CSR training coach reviewing a structured session summary of a customer interaction.
