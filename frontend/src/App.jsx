@@ -12,8 +12,18 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [username, setUsername] = useState(() => localStorage.getItem("username"));
   const [displayName, setDisplayName] = useState(() => localStorage.getItem("displayName"));
-  const [view, setView] = useState("landing"); // "landing" | "mode-select" | "chat" | "report" | "profile"
-  const [sessionConfig, setSessionConfig] = useState(null);
+  const [sessionConfig, setSessionConfig] = useState(() => {
+    try {
+      const id = localStorage.getItem("sessionId");
+      const raw = localStorage.getItem("sessionConfig");
+      return (id && raw) ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [view, setView] = useState(() =>
+    (localStorage.getItem("sessionId") && localStorage.getItem("sessionConfig")) ? "chat" : "landing"
+  );
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
@@ -29,10 +39,16 @@ export default function App() {
     setView("landing");
   }
 
+  function clearStoredSession() {
+    localStorage.removeItem("sessionId");
+    localStorage.removeItem("sessionConfig");
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     localStorage.removeItem("displayName");
+    clearStoredSession();
     setToken(null);
     setUsername(null);
     setDisplayName(null);
@@ -45,6 +61,7 @@ export default function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     localStorage.removeItem("displayName");
+    clearStoredSession();
     setToken(null);
     setUsername(null);
     setDisplayName(null);
@@ -54,11 +71,21 @@ export default function App() {
   }
 
   function handleModeSelect(config) {
+    localStorage.setItem("sessionConfig", JSON.stringify(config));
     setSessionConfig(config);
     setView("chat");
   }
 
+  function handleSessionStarted(id) {
+    localStorage.setItem("sessionId", String(id));
+  }
+
+  function handleSessionRestoreFailed() {
+    localStorage.removeItem("sessionId");
+  }
+
   async function handleEndSession(messages, sessionId) {
+    clearStoredSession();
     setReportLoading(true);
     setReportError(null);
     setView("report");
@@ -87,6 +114,7 @@ export default function App() {
   }
 
   function handleNewSession() {
+    clearStoredSession();
     setSessionConfig(null);
     setReport(null);
     setReportError(null);
@@ -199,6 +227,9 @@ export default function App() {
       navProps={navProps}
       onEndSession={handleEndSession}
       onAuthExpired={handleAuthExpired}
+      storedSessionId={localStorage.getItem("sessionId")}
+      onSessionStarted={handleSessionStarted}
+      onSessionRestoreFailed={handleSessionRestoreFailed}
     />
   );
 }
