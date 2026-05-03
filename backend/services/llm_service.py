@@ -20,6 +20,10 @@ RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No 
   "feedback": null
 }"""
 
+RESPONSE_FORMAT_STREAM = """
+
+Respond naturally in character. Plain conversational text only — no JSON, no formatting. 2–4 sentences."""
+
 RESPONSE_FORMAT_TRAINING = """
 
 RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
@@ -257,7 +261,7 @@ def load_prompt(filename: str) -> str:
         return f.read().strip()
 
 
-def build_system_prompt(scenario: str, persona: str, training: bool) -> str:
+def build_system_prompt(scenario: str, persona: str, training: bool, stream: bool = False) -> str:
     """
     Build the final system prompt by:
     1. Loading the base scenario persona prompt (character, scenario, resolution criteria)
@@ -340,9 +344,12 @@ If the CSR states that an email, confirmation, or notification has been sent:
 """
 
     prompt += "\n\n" + BEHAVIOR_RULES
-    prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
-    if training:
-        prompt += COACHING_INSTRUCTIONS
+    if stream:
+        prompt += RESPONSE_FORMAT_STREAM
+    else:
+        prompt += RESPONSE_FORMAT_TRAINING if training else RESPONSE_FORMAT_PLAIN
+        if training:
+            prompt += COACHING_INSTRUCTIONS
 
     role_constraint_prefix = """You are STRICTLY a CUSTOMER in this conversation.
 You are NOT a customer support agent.
@@ -524,6 +531,48 @@ Your response will be evaluated based on whether you apply this instruction."""
         print(json.dumps(fallback_feedback, indent=2))
 
         return {"customer_response": raw_text.strip(), "feedback": fallback_feedback}
+
+
+def stream_llm_response(scenario: str, persona: str, message: str, history: list[dict]):
+    """Generator that streams the customer response as plain text for /chat-stream."""
+    system_prompt = build_system_prompt(scenario, persona, training=False, stream=True)
+
+    last_next_step = None
+    for turn in reversed(history):
+        if turn.get("role") == "user" and isinstance(turn.get("feedback"), dict):
+            next_step = turn["feedback"].get("nextStep", "").strip()
+            if next_step:
+                last_next_step = next_step
+                break
+
+    if last_next_step:
+        system_prompt += f"""
+
+COACHING SIGNAL (CRITICAL):
+You MUST apply this in your next response:
+{last_next_step}
+
+Do not repeat previous behavior.
+Your response will be evaluated based on whether you apply this instruction."""
+
+    messages = build_messages(history, system_prompt, message)
+
+    try:
+        stream = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            max_tokens=512,
+            temperature=0.7,
+            stream=True,
+            timeout=LLM_TIMEOUT,
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
+    except Exception as e:
+        print(f"ERROR stream_llm_response failed: {e}")
+        yield "I'm having trouble responding right now. Please try again."
 
 
 def generate_report(history: list[dict]) -> dict:

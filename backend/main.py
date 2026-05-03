@@ -1,12 +1,13 @@
 import json as json_lib
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from services.llm_service import call_llm, start_conversation, lookup_knowledge_base, generate_report
-from database import engine, get_db
+from services.llm_service import call_llm, start_conversation, lookup_knowledge_base, generate_report, stream_llm_response
+from database import engine, get_db, SessionLocal
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import models
 
@@ -267,6 +268,62 @@ async def chat(
     db.commit()
 
     return ChatResponse(**result, session_id=request.session_id)
+
+
+def _stream_with_db_save(base_gen, session_id):
+    """Wraps a text generator: yields all chunks, then saves the full response to DB."""
+    full_text = ""
+    for chunk in base_gen:
+        full_text += chunk
+        yield chunk
+    if session_id is not None:
+        bg_db = SessionLocal()
+        try:
+            bg_db.add(models.MessageRecord(
+                session_id=session_id,
+                role="assistant",
+                content=full_text,
+            ))
+            bg_db.commit()
+        except Exception as e:
+            print(f"ERROR saving streamed assistant message: {e}")
+        finally:
+            bg_db.close()
+
+
+@app.post("/chat-stream")
+async def chat_stream(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    if request.scenario not in VALID_SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
+    if request.persona not in VALID_PERSONAS:
+        raise HTTPException(status_code=400, detail=f"persona must be one of {VALID_PERSONAS}")
+    if not request.message.strip():
+        raise HTTPException(status_code=400, detail="message cannot be empty")
+
+    if request.session_id is not None:
+        db.add(models.MessageRecord(
+            session_id=request.session_id,
+            role="user",
+            content=request.message,
+        ))
+        db.commit()
+
+    return StreamingResponse(
+        _stream_with_db_save(
+            stream_llm_response(
+                scenario=request.scenario,
+                persona=request.persona,
+                message=request.message,
+                history=request.history,
+            ),
+            request.session_id,
+        ),
+        media_type="text/plain",
+    )
 
 
 class LookupRequest(BaseModel):

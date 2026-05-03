@@ -139,6 +139,79 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     setLoading(true);
     setError(null);
 
+    if (!training) {
+      // ── Streaming path (evaluation mode) ──────────────────────────────────
+      try {
+        const response = await fetch(`${BASE_URL}/chat-stream`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            scenario, persona, training,
+            message: trimmed,
+            history: updatedMessages,
+            session_id: sessionId,
+          }),
+        });
+
+        if (response.status === 401) { onAuthExpired(); return; }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        let started = false;
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (!chunk) continue;
+            text += chunk;
+            if (!started) {
+              started = true;
+              setMessages(prev => [...prev, { role: "assistant", content: text }]);
+            } else {
+              setMessages(prev => {
+                const next = [...prev];
+                next[next.length - 1] = { role: "assistant", content: text };
+                return next;
+              });
+            }
+          }
+          if (!started) {
+            setMessages(prev => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+          }
+        } catch (streamErr) {
+          console.error("❌ STREAM READ ERROR:", streamErr);
+          setMessages(prev => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last?.role === "assistant") {
+              next[next.length - 1] = { role: "assistant", content: "Something went wrong. Please try again." };
+            } else {
+              next.push({ role: "assistant", content: "Something went wrong. Please try again." });
+            }
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("❌ STREAM ERROR:", err);
+        setMessages(prev => {
+          if (prev[prev.length - 1]?.role !== "assistant") {
+            return [...prev, { role: "assistant", content: "Something went wrong. Please try again." }];
+          }
+          return prev;
+        });
+        setError("Failed to reach the server. Please try again.");
+      } finally {
+        setLoading(false);
+        inputRef.current?.focus();
+      }
+      return;
+    }
+
+    // ── Non-streaming path (training mode — full JSON with feedback) ───────
     try {
       console.log("📤 Request payload:", {
         scenario,
@@ -298,7 +371,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                 />
               ))}
 
-              {loading && (
+              {loading && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="text-gray-400 text-sm">Customer is typing...</div>
               )}
 
