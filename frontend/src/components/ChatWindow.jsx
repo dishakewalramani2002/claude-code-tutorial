@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { flushSync } from "react-dom";
 import axios from "axios";
 import MessageBubble from "./MessageBubble";
 import FeedbackPanel from "./FeedbackPanel";
@@ -142,7 +143,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     if (!training) {
       // ── Streaming path (evaluation mode) ──────────────────────────────────
       try {
-        const response = await fetch(`${BASE_URL}/chat-stream`, {
+        const res = await fetch(`${BASE_URL}/chat-stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -153,12 +154,11 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
           }),
         });
 
-        if (response.status === 401) { onAuthExpired(); return; }
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (res.status === 401) { onAuthExpired(); return; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let text = "";
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
         let started = false;
 
         try {
@@ -167,15 +167,25 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
             if (!chunk) continue;
-            text += chunk;
+
             if (!started) {
               started = true;
-              setMessages(prev => [...prev, { role: "assistant", content: text }]);
+              // flushSync bypasses React 18 batching so the first token
+              // renders immediately (hides typing indicator, shows message).
+              flushSync(() => {
+                setMessages(prev => [...prev, { role: "assistant", content: chunk }]);
+              });
             } else {
-              setMessages(prev => {
-                const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: text };
-                return next;
+              // Accumulate into prev state — avoids stale closure capture.
+              flushSync(() => {
+                setMessages(prev => {
+                  const next = [...prev];
+                  next[next.length - 1] = {
+                    role: "assistant",
+                    content: next[next.length - 1].content + chunk,
+                  };
+                  return next;
+                });
               });
             }
           }
