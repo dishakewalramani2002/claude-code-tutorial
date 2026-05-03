@@ -162,7 +162,7 @@ function RegisterForm({ onLogin, onSwitch }) {
   );
 }
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, message }) {
   const [view, setView] = useState("login");
 
   return (
@@ -174,6 +174,12 @@ export default function LoginPage({ onLogin }) {
             {view === "login" ? "Sign in to continue" : "Create your account"}
           </p>
         </div>
+
+        {message && (
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-lg px-4 py-3 text-center">
+            {message}
+          </div>
+        )}
 
         {view === "login"
           ? <LoginForm onLogin={onLogin} onSwitch={() => setView("register")} />

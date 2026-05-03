@@ -17,6 +17,7 @@ export default function App() {
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState(null);
 
   function handleLogin(accessToken, user, name) {
     localStorage.setItem("token", accessToken);
@@ -38,6 +39,18 @@ export default function App() {
     setView("landing");
     setSessionConfig(null);
     setReport(null);
+  }
+
+  function handleAuthExpired() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("displayName");
+    setToken(null);
+    setUsername(null);
+    setDisplayName(null);
+    setSessionConfig(null);
+    setReport(null);
+    setSessionExpiredMessage("Session expired. Please log in again.");
   }
 
   function handleModeSelect(config) {
@@ -62,7 +75,11 @@ export default function App() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setReport(response.data);
-    } catch {
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleAuthExpired();
+        return;
+      }
       setReportError("Failed to generate report. Please try again.");
     } finally {
       setReportLoading(false);
@@ -77,7 +94,15 @@ export default function App() {
   }
 
   if (!token) {
-    return <LoginPage onLogin={handleLogin} />;
+    return (
+      <LoginPage
+        onLogin={(accessToken, user, name) => {
+          setSessionExpiredMessage(null);
+          handleLogin(accessToken, user, name);
+        }}
+        message={sessionExpiredMessage}
+      />
+    );
   }
 
   const navProps = {
@@ -173,6 +198,7 @@ export default function App() {
       token={token}
       navProps={navProps}
       onEndSession={handleEndSession}
+      onAuthExpired={handleAuthExpired}
     />
   );
 }
