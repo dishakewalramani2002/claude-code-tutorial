@@ -15,7 +15,7 @@ const SCENARIO_LABELS = {
   vc3: "Lost Baggage",
 };
 
-export default function ChatWindow({ sessionConfig, token, navProps, onEndSession }) {
+export default function ChatWindow({ sessionConfig, token, navProps, onEndSession, onAuthExpired }) {
   const { scenario, persona, training, scenarioLabel, personaEmoji, personaLabel } = sessionConfig;
 
   const [messages, setMessages] = useState([]);
@@ -92,6 +92,10 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
 
       } catch (err) {
         if (axios.isCancel(err)) return;
+        if (err.response?.status === 401) {
+          onAuthExpired();
+          return;
+        }
         setError("Failed to start session. Please try again.");
       } finally {
         setLoading(false);
@@ -170,6 +174,10 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
 
     } catch (err) {
       console.error("❌ ERROR:", err);
+      if (err.response?.status === 401) {
+        onAuthExpired();
+        return;
+      }
       setError("Failed to reach the server. Please try again.");
     } finally {
       setLoading(false);

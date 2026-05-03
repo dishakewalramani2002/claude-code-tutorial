@@ -4,6 +4,8 @@ import json
 from dotenv import load_dotenv
 from config import build_client, MODEL_NAME
 
+LLM_TIMEOUT = 15  # seconds
+
 load_dotenv()
 
 client = build_client()
@@ -387,17 +389,21 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         {"role": "user", "content": opener},
     ]
 
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        max_tokens=512,
-        temperature=0.7,
-    )
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            max_tokens=512,
+            temperature=0.7,
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        print(f"ERROR start_conversation LLM call failed: {e}")
+        return {"customer_response": "I'm having trouble responding right now. Please try again.", "feedback": None}
 
     raw_text = response.choices[0].message.content.strip()
     raw_text = re.sub(r"###FEEDBACK###.*", "", raw_text, flags=re.DOTALL).strip()
 
-    # LLM may return JSON even for the opener (system prompt instructs it to)
     try:
         parsed = json.loads(raw_text)
         raw_text = parsed.get("customer_response", raw_text)
@@ -418,15 +424,20 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
 
     system_prompt = load_prompt(kb_prompts[scenario])
 
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": query},
-        ],
-        max_tokens=512,
-        temperature=0.3,
-    )
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query},
+            ],
+            max_tokens=512,
+            temperature=0.3,
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        print(f"ERROR lookup_knowledge_base LLM call failed: {e}")
+        return "I'm having trouble responding right now. Please try again."
 
     return response.choices[0].message.content.strip()
 
@@ -456,13 +467,18 @@ Your response will be evaluated based on whether you apply this instruction."""
 
     messages = build_messages(history, system_prompt, message)
 
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        max_tokens=1024,
-        temperature=0.7,
-        response_format={"type": "json_object"},
-    )
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7,
+            response_format={"type": "json_object"},
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        print(f"ERROR call_llm LLM call failed: {e}")
+        return {"customer_response": "I'm having trouble responding right now. Please try again.", "feedback": None}
 
     raw_text = response.choices[0].message.content
 
@@ -583,13 +599,14 @@ def generate_report(history: list[dict]) -> dict:
             ],
             response_format={"type": "json_object"},
             temperature=0.3,
+            timeout=LLM_TIMEOUT,
         )
         raw = response.choices[0].message.content.strip()
         coaching = json.loads(raw)
         if not isinstance(coaching, dict):
             raise ValueError("LLM response is not a dict")
     except Exception as e:
-        print(f"WARNING: generate_report failed — {e}")
+        print(f"ERROR generate_report LLM call failed: {e}")
         return _fallback
 
     turn_by_turn = [
