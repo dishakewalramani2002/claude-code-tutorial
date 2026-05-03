@@ -145,7 +145,12 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
       try {
         const res = await fetch(`${BASE_URL}/chat-stream`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "text/plain",
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
           body: JSON.stringify({
             scenario, persona, training,
             message: trimmed,
@@ -156,6 +161,11 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
 
         if (res.status === 401) { onAuthExpired(); return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        if (!res.body) {
+          setMessages(prev => [...prev, { role: "assistant", content: "Streaming is not supported in this environment. Please try again." }]);
+          return;
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder("utf-8");
