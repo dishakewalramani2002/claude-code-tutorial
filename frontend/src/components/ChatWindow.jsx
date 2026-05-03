@@ -15,7 +15,7 @@ const SCENARIO_LABELS = {
   vc3: "Lost Baggage",
 };
 
-export default function ChatWindow({ sessionConfig, token, navProps, onEndSession, onAuthExpired }) {
+export default function ChatWindow({ sessionConfig, token, navProps, onEndSession, onAuthExpired, storedSessionId, onSessionStarted, onSessionRestoreFailed }) {
   const { scenario, persona, training, scenarioLabel, personaEmoji, personaLabel } = sessionConfig;
 
   const [messages, setMessages] = useState([]);
@@ -76,33 +76,52 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
   useEffect(() => {
     const controller = new AbortController();
 
-    async function fetchOpener() {
+    async function startFresh() {
+      const response = await axios.post(
+        `${BASE_URL}/start`,
+        { scenario, persona, training },
+        { headers: authHeaders, signal: controller.signal }
+      );
+      setSessionId(response.data.session_id);
+      onSessionStarted(response.data.session_id);
+      setMessages([{ role: "assistant", content: response.data.customer_response }]);
+    }
+
+    async function init() {
       setLoading(true);
       try {
-        const response = await axios.post(
-          `${BASE_URL}/start`,
-          { scenario, persona, training },
-          { headers: authHeaders, signal: controller.signal }
-        );
-
-        setSessionId(response.data.session_id);
-        setMessages([
-          { role: "assistant", content: response.data.customer_response }
-        ]);
-
-      } catch (err) {
-        if (axios.isCancel(err)) return;
-        if (err.response?.status === 401) {
-          onAuthExpired();
+        if (storedSessionId) {
+          const response = await axios.get(
+            `${BASE_URL}/sessions/${storedSessionId}`,
+            { headers: authHeaders, signal: controller.signal }
+          );
+          setSessionId(Number(storedSessionId));
+          setMessages(response.data.messages);
           return;
         }
-        setError("Failed to start session. Please try again.");
+        await startFresh();
+      } catch (err) {
+        if (axios.isCancel(err)) return;
+        if (err.response?.status === 401) { onAuthExpired(); return; }
+
+        if (storedSessionId) {
+          onSessionRestoreFailed();
+          try {
+            await startFresh();
+          } catch (err2) {
+            if (axios.isCancel(err2)) return;
+            if (err2.response?.status === 401) { onAuthExpired(); return; }
+            setError("Failed to start session. Please try again.");
+          }
+        } else {
+          setError("Failed to start session. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
     }
 
-    fetchOpener();
+    init();
     return () => controller.abort();
   }, [scenario, persona, training]);
 
