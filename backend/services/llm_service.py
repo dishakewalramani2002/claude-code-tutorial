@@ -56,6 +56,13 @@ The "analysis" field is REQUIRED in every response. You MUST always include it. 
 
 COACHING_INSTRUCTIONS = """
 
+EVALUATION SCOPE — NON-NEGOTIABLE (READ BEFORE ANYTHING ELSE):
+You are evaluating ONLY the single CSR message in the CSR_MESSAGE_TO_EVALUATE block at the end of this prompt.
+Do NOT evaluate any previous CSR turn, even if it appears in the conversation history.
+Do NOT carry over, average, or reference scores or reasoning from any prior turn.
+Do NOT compare the current message against previous CSR behavior.
+Each evaluation is completely independent and based solely on the current message text.
+
 You are a senior CSR training coach specializing in customer de-escalation.
 Your role is to evaluate a CSR's response and provide one immediate coaching direction to improve the NEXT reply.
 
@@ -218,7 +225,13 @@ ALIGNMENT RULE
 - "area", "focus", and "nextStep" MUST all address the SAME single skill gap — they must not reference different problems or split focus across multiple issues.
 - If empathyFirst is NOT "Strong": "area" and "focus" MUST target empathy, NOT active listening.
 - "reason" fields must refer ONLY to observable wording in the CSR response — do NOT infer intent or assume unstated behavior.
-- Do NOT force de-escalation theory labels if they do not naturally apply; describe the principle in plain terms instead."""
+- Do NOT force de-escalation theory labels if they do not naturally apply; describe the principle in plain terms instead.
+
+AREA-FOCUS-NEXTSTEP HARD CONSTRAINT (ZERO TOLERANCE):
+"area", "focus", and "nextStep" MUST reference the EXACT SAME skill. Mixed-skill outputs are INVALID.
+- If "area" names an empathy behavior → "focus" and "nextStep" MUST address empathy only, not active listening.
+- If "area" names an active listening behavior → "focus" and "nextStep" MUST address active listening only, not empathy.
+Producing mixed-skill outputs across these three fields is a critical evaluation failure."""
 
 
 SESSION_PROMPT = """You are a senior CSR training coach reviewing a structured session summary of a customer interaction.
@@ -449,6 +462,33 @@ def lookup_knowledge_base(scenario: str, query: str) -> str:
     return response.choices[0].message.content.strip()
 
 
+_LABEL_TO_SCORE = {"Strong": 2, "Developing": 1, "Needs Work": 0}
+
+
+def _enforce_feedback_consistency(feedback: dict, csr_message: str) -> None:
+    """Post-processing safety net — enforces hard scoring rules the LLM may violate."""
+    signals = feedback.setdefault("signals", {})
+    analysis = feedback.setdefault("analysis", {})
+
+    # Minimal message (≤4 words) → both skills must be Needs Work
+    if len(csr_message.strip().split()) <= 4:
+        signals["empathyFirst"] = "Needs Work"
+        signals["activeListening"] = "Needs Work"
+
+    empathy = signals.get("empathyFirst", "Needs Work")
+    al = signals.get("activeListening", "Needs Work")
+
+    # Priority rule: empathyFirst not Strong → activeListening cannot be Strong
+    if empathy != "Strong" and al == "Strong":
+        signals["activeListening"] = "Developing"
+        al = "Developing"
+
+    # Numeric scores must exactly match signal labels
+    analysis.setdefault("empathy_score", {})["score"] = _LABEL_TO_SCORE.get(empathy, 0)
+    al_score = min(_LABEL_TO_SCORE.get(al, 0), 1 if empathy != "Strong" else 2)
+    analysis.setdefault("active_listening_score", {})["score"] = al_score
+
+
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
     print("🚀 VERSION: ANALYSIS_FIX_V2")
     system_prompt = build_system_prompt(scenario, persona, training)
@@ -471,6 +511,15 @@ You MUST apply this in your next response:
 
 Do not repeat previous behavior.
 Your response will be evaluated based on whether you apply this instruction."""
+
+    if training:
+        system_prompt += f"""
+
+CSR_MESSAGE_TO_EVALUATE (EVALUATE THIS AND ONLY THIS):
+\"{message}\"
+
+Your feedback MUST be based exclusively on the text above.
+Do NOT reference, draw from, or compare against any other CSR turn in the conversation history."""
 
     messages = build_messages(history, system_prompt, message)
 
@@ -510,6 +559,9 @@ Your response will be evaluated based on whether you apply this instruction."""
 
         if training and "analysis" not in feedback:
             raise ValueError("ANALYSIS MISSING — SHOULD NEVER HAPPEN")
+
+        if training and isinstance(feedback, dict):
+            _enforce_feedback_consistency(feedback, message)
 
         print("=== FINAL FEEDBACK ===")
         print(json.dumps(feedback, indent=2))
