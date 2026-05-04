@@ -11,10 +11,21 @@ _is_sqlite = DATABASE_URL.startswith("sqlite")
 _db_type = "SQLite" if _is_sqlite else "PostgreSQL"
 print(f"[database] Using {_db_type}: {DATABASE_URL}")
 
+_pool_kwargs = (
+    {}
+    if _is_sqlite
+    else {
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_recycle": 1800,
+    }
+)
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if _is_sqlite else {},
     pool_pre_ping=True,
+    **_pool_kwargs,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

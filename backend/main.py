@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from services.llm_service import call_llm, start_conversation, lookup_knowledge_base, generate_report, stream_llm_response
@@ -382,5 +383,6 @@ async def report(
 
 
 @app.get("/health")
-def health():
+def health(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
     return {"status": "ok"}
