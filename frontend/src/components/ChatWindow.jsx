@@ -74,6 +74,13 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     console.log("📊 CURRENT MESSAGES:", messages);
   }, [messages]);
 
+  // ADD: Persist messages to localStorage per session
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      localStorage.setItem(`messages_${sessionId}`, JSON.stringify(messages));
+    }
+  }, [messages, sessionId]);
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -92,6 +99,12 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
       setLoading(true);
       try {
         if (storedSessionId) {
+          // ADD: Show cached messages instantly before backend responds
+          const cached = localStorage.getItem(`messages_${storedSessionId}`);
+          if (cached) {
+            try { setMessages(JSON.parse(cached)); } catch {}
+          }
+
           const response = await axios.get(
             `${BASE_URL}/sessions/${storedSessionId}`,
             { headers: authHeaders, signal: controller.signal }
@@ -317,7 +330,11 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
         </div>
         <div className="flex items-center gap-6">
           <button
-            onClick={() => onEndSession(messages, sessionId)}
+            onClick={() => {
+              // ADD: Clear persisted messages when session ends
+              if (sessionId) localStorage.removeItem(`messages_${sessionId}`);
+              onEndSession(messages, sessionId);
+            }}
             className="text-sm text-gray-500 hover:text-red-500 transition"
           >
             End Session & Get Report

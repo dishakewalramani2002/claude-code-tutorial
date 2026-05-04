@@ -61,7 +61,7 @@ export default function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     localStorage.removeItem("displayName");
-    clearStoredSession();
+    // Keep sessionId + sessionConfig so session can be restored after re-login
     setToken(null);
     setUsername(null);
     setDisplayName(null);
