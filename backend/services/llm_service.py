@@ -151,13 +151,10 @@ Do NOT suggest active listening if empathy is insufficient.
 Active listening may be evaluated when empathy is at least Developing.
 You may evaluate both skills, but prioritize empathy if it is weak.
 
-SCORING CONSISTENCY RULE (CRITICAL — ENFORCE ON EVERY OUTPUT):
-If empathyFirst is NOT "Strong":
-  activeListening MUST NOT be "Strong" — downgrade to at most "Developing"
-  nextStep MUST target empathy only — do NOT suggest active listening improvements
-If empathyFirst IS "Strong":
-  activeListening may be scored freely based on the Active Listening rubric
-  nextStep may target either skill based on which needs more improvement
+SCORING CONSISTENCY RULE:
+Each skill is scored independently based solely on its own rubric.
+activeListening may be "Strong" regardless of the empathyFirst rating — do NOT cap it based on empathy.
+nextStep MUST target whichever skill needs the most improvement, regardless of which skill that is.
 
 OUTPUT RULES
 You must:
@@ -199,7 +196,6 @@ Score mapping (use integers only):
 "active_listening_score"
 - "score": integer derived from the activeListening label above (Strong=2, Developing=1, Needs Work=0)
 - "reason": exactly one sentence; must cite which specific customer details were or were not reflected in the CSR response; do NOT mention politeness or general helpfulness
-- CONSISTENCY: if empathyFirst is NOT "Strong", active_listening_score must be at most 1 (Developing)
 
 "learn_from_this_practice"
 - "area": fewer than 5 words; names ONE specific behavior only (e.g., "Naming customer emotion", "Mirroring specific details")
@@ -210,7 +206,7 @@ ANALYSIS CONSISTENCY RULES (CRITICAL — ENFORCE ON EVERY OUTPUT):
 
 SIGNALS ↔ ANALYSIS CONSISTENCY
 - The numeric score in "empathy_score" MUST equal the integer mapping of the empathyFirst signal (Strong=2, Developing=1, Needs Work=0). The numeric score in "active_listening_score" MUST equal the integer mapping of the activeListening signal. Scores in the analysis block may NEVER contradict the signals labels.
-- If empathyFirst is NOT "Strong": activeListening MUST NOT be "Strong" AND active_listening_score MUST NOT be 2.
+- Each skill is scored independently — activeListening may be "Strong" (score: 2) even when empathyFirst is not "Strong".
 
 REASON QUALITY REQUIREMENT
 - Each "reason" must explicitly reference a specific word, phrase, or observable absence in the CSR's response — generic statements such as "the CSR did not show empathy" are not allowed.
@@ -222,7 +218,7 @@ PRIORITIZATION RULE
 
 ALIGNMENT RULE
 - "area", "focus", and "nextStep" MUST all address the SAME single skill gap — they must not reference different problems or split focus across multiple issues.
-- If empathyFirst is NOT "Strong": "area" and "focus" MUST target empathy, NOT active listening.
+- "area" and "focus" MUST target whichever single skill needs the most improvement — do NOT split across both skills.
 - "reason" fields must refer ONLY to observable wording in the CSR response — do NOT infer intent or assume unstated behavior.
 - Do NOT force de-escalation theory labels if they do not naturally apply; describe the principle in plain terms instead.
 
@@ -477,15 +473,9 @@ def _enforce_feedback_consistency(feedback: dict, csr_message: str) -> None:
     empathy = signals.get("empathyFirst", "Needs Work")
     al = signals.get("activeListening", "Needs Work")
 
-    # Priority rule: empathyFirst not Strong → activeListening cannot be Strong
-    if empathy != "Strong" and al == "Strong":
-        signals["activeListening"] = "Developing"
-        al = "Developing"
-
-    # Numeric scores must exactly match signal labels
+    # Numeric scores must exactly match signal labels — skills are independent
     analysis.setdefault("empathy_score", {})["score"] = _LABEL_TO_SCORE.get(empathy, 0)
-    al_score = min(_LABEL_TO_SCORE.get(al, 0), 1 if empathy != "Strong" else 2)
-    analysis.setdefault("active_listening_score", {})["score"] = al_score
+    analysis.setdefault("active_listening_score", {})["score"] = _LABEL_TO_SCORE.get(al, 0)
 
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
