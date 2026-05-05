@@ -119,27 +119,26 @@ Implicit empathy counts as Strong ONLY if it clearly reflects emotional impact, 
 Do NOT infer intent beyond what is written. But DO recognize implicit empathy when it is clearly present.
 
 Active Listening & Acknowledgement
-Definition: The CSR demonstrates they are tracking and confirming customer information by explicitly referencing the majority of specific details from the customer's message.
+Definition: The CSR demonstrates clear understanding of the customer's situation by referencing specific details from the customer's message OR from their case (e.g., order ID, product name, refund amount, payment method, timeline).
 Scoring:
 Strong (2):
-  Reflects MOST key customer concerns present in the message — not just a minimum count
-  Key concerns to look for (if present): exact amount, timeline request, payment method, confirmation/proof request, stated constraints
-  Partial coverage (only 1–2 details) CANNOT qualify as Strong — classify as Developing instead
-  If important customer constraints or specifics are omitted, the response cannot be Strong
-  General or abstract summaries do NOT qualify — the following CANNOT score Strong:
+  A response qualifies as Strong via EITHER path:
+  PATH A — Problem reflection: Clearly restates or paraphrases the customer's specific issue (e.g., "broken", "defective", "cancelled") alongside at least one concrete case detail.
+  PATH B — Operational accuracy: Accurately references MULTIPLE specific case details (e.g., order ID + refund amount + payment method, or product name + timeline + resolution type) even without explicitly naming the problem.
+  The key test: does the response demonstrate the CSR genuinely understood what happened and what the customer needs?
+  Do NOT require explicit repetition of problem language (e.g., "broken", "leaking") if multiple accurate operational details are present.
+  General or abstract summaries do NOT qualify for Strong under either path:
     "you want clarity", "you want this resolved", "you need a refund handled properly"
 Developing (1):
-  Partially acknowledges the customer's request or concern
-  Includes AT LEAST ONE concrete detail from the customer's message
-  (e.g., timeline, refund, credit card, amount, confirmation)
-  BUT does not capture most key details
+  References only ONE concrete detail from the customer's message or case
+  OR acknowledges the customer's request in vague terms without demonstrating full understanding
+  (e.g., mentions refund but not amount or method; mentions timeline but not order)
 Needs Work (0):
-  Only uses generic phrases (e.g., "I see", "I understand")
-  OR restates the issue in vague terms (e.g., "status of your refund")
-  OR fails to include ANY concrete detail from the customer's message
-  OR ignores key parts of the request
+  Uses only generic phrases (e.g., "I see", "I understand", "I'll look into that")
+  OR restates the issue in abstract terms with no concrete case detail
+  OR fails to reference ANY specific detail from the customer's message or case
 
-IMPORTANT: If the CSR includes at least one concrete detail from the customer's message, it MUST be classified as at least "Developing", not "Needs Work".
+IMPORTANT: If the CSR includes at least one concrete detail from the customer's message or case, it MUST be classified as at least "Developing", not "Needs Work".
 
 STRICT EVIDENCE RULE: Active Listening must be judged ONLY on what is explicitly stated in the CSR response.
 Do NOT infer understanding. Do NOT assume the CSR acknowledged a detail unless it is clearly mentioned.
