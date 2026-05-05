@@ -305,10 +305,10 @@ function ActionButton({ label, onClick, variant = "default" }) {
 }
 
 // ─── VC1 STEP SCREENS ────────────────────────────────────────────────────────
-function VC1Lookup({ onAdvance }) {
-  const [query, setQuery] = useState("");
-  const [found, setFound] = useState(false);
+function VC1Lookup({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const query = workflowData.loanSearch;
+  const found = workflowData.applicationStatus;
 
   return (
     <div className="space-y-4">
@@ -318,10 +318,10 @@ function VC1Lookup({ onAdvance }) {
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter Member ID or Date of Birth..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+          onChange={e => updateData("loanSearch", e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && updateData("applicationStatus", true)}
         />
-        <ActionButton label="Search Member" variant="primary" onClick={() => query.trim() && setFound(true)} />
+        <ActionButton label="Search Member" variant="primary" onClick={() => query.trim() && updateData("applicationStatus", true)} />
       </div>
       <div className="flex gap-2">
         <ActionButton label="New Enrollment" onClick={() => setWrong(true)} />
@@ -354,9 +354,9 @@ function VC1Lookup({ onAdvance }) {
   );
 }
 
-function VC1Bills({ onAdvance }) {
-  const [selected, setSelected] = useState(null);
+function VC1Bills({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const selected = workflowData.delayReason ? (VC1_BILLS.find(b => b.id === workflowData.delayReason) ?? null) : null;
 
   return (
     <div className="space-y-4">
@@ -400,7 +400,7 @@ function VC1Bills({ onAdvance }) {
               </td>
               <td className="px-3 py-2">
                 <button
-                  onClick={() => setSelected(b)}
+                  onClick={() => updateData("delayReason", b.id)}
                   className="text-blue-600 hover:underline text-xs font-medium"
                 >
                   View
@@ -461,9 +461,9 @@ function VC1Detail({ onAdvance }) {
   );
 }
 
-function VC1Policy({ onAdvance }) {
-  const [decision, setDecision] = useState(null);
+function VC1Policy({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const decision = workflowData.resolution;
 
   return (
     <div className="space-y-4">
@@ -477,7 +477,7 @@ function VC1Policy({ onAdvance }) {
           <ActionButton
             label="✓ Valid — Deductible Applies (Patient Responsibility)"
             variant={decision === "valid" ? "primary" : "default"}
-            onClick={() => { setDecision("valid"); setWrong(false); }}
+            onClick={() => { updateData("resolution", "valid"); setWrong(false); }}
           />
           <ActionButton label="Flag as Billing Error" onClick={() => setWrong(true)} />
           <ActionButton label="Request Insurance Adjustment" onClick={() => setWrong(true)} />
@@ -495,9 +495,9 @@ function VC1Policy({ onAdvance }) {
   );
 }
 
-function VC1Decision({ onAdvance }) {
-  const [note, setNote] = useState("");
+function VC1Decision({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const note = workflowData.caseNote;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Apply Determination</h2>
@@ -514,7 +514,7 @@ function VC1Decision({ onAdvance }) {
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g. Member called to dispute CLM-001. Reviewed policy — deductible of $1,200 not met for plan year 2024. Bill is valid. Explained to member."
           value={note}
-          onChange={e => setNote(e.target.value)}
+          onChange={e => updateData("caseNote", e.target.value)}
         />
       </div>
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
@@ -560,10 +560,10 @@ function VC1Communicate({ onReset }) {
 }
 
 // ─── VC2 STEP SCREENS ────────────────────────────────────────────────────────
-function VC2Lookup({ onAdvance }) {
-  const [query, setQuery] = useState("");
-  const [found, setFound] = useState(false);
+function VC2Lookup({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const query = workflowData.loanSearch;
+  const found = workflowData.applicationStatus;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Passenger Lookup</h2>
@@ -572,10 +572,10 @@ function VC2Lookup({ onAdvance }) {
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter booking reference or last name..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+          onChange={e => updateData("loanSearch", e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && updateData("applicationStatus", true)}
         />
-        <ActionButton label="Search" variant="primary" onClick={() => query.trim() && setFound(true)} />
+        <ActionButton label="Search" variant="primary" onClick={() => query.trim() && updateData("applicationStatus", true)} />
       </div>
       <div className="flex gap-2">
         <ActionButton label="Upgrade Seat" onClick={() => setWrong(true)} />
@@ -632,9 +632,9 @@ function VC2Flight({ onAdvance }) {
   );
 }
 
-function VC2Rebook({ onAdvance }) {
-  const [selected, setSelected] = useState(null);
+function VC2Rebook({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const selected = workflowData.delayReason ? (VC2_REbooking.find(f => f.id === workflowData.delayReason) ?? null) : null;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Rebooking Options — {VC2_CUSTOMER.name}</h2>
@@ -645,7 +645,7 @@ function VC2Rebook({ onAdvance }) {
         {VC2_REbooking.map(f => (
           <div
             key={f.id}
-            onClick={() => setSelected(f)}
+            onClick={() => updateData("delayReason", f.id)}
             className={`border rounded-xl p-4 cursor-pointer transition text-sm ${
               selected?.id === f.id ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"
             }`}
@@ -679,9 +679,9 @@ function VC2Rebook({ onAdvance }) {
   );
 }
 
-function VC2Policy({ onAdvance }) {
-  const [decision, setDecision] = useState(null);
+function VC2Policy({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const decision = workflowData.resolution;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Compensation Policy — Weather Cancellation</h2>
@@ -694,7 +694,7 @@ function VC2Policy({ onAdvance }) {
           <ActionButton
             label="✓ Rebooking + $15 Meal Voucher"
             variant={decision === "rebook_meal" ? "primary" : "default"}
-            onClick={() => { setDecision("rebook_meal"); setWrong(false); }}
+            onClick={() => { updateData("resolution", "rebook_meal"); setWrong(false); }}
           />
           <ActionButton label="Rebooking + Hotel Voucher" onClick={() => setWrong(true)} />
           <ActionButton label="Rebooking + $300 Cash Comp" onClick={() => setWrong(true)} />
@@ -759,10 +759,10 @@ function VC2Communicate({ onReset }) {
 }
 
 // ─── VC3 STEP SCREENS ────────────────────────────────────────────────────────
-function VC3Lookup({ onAdvance }) {
-  const [query, setQuery] = useState("");
-  const [found, setFound] = useState(false);
+function VC3Lookup({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const query = workflowData.loanSearch;
+  const found = workflowData.applicationStatus;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Passenger & Bag Lookup</h2>
@@ -771,10 +771,10 @@ function VC3Lookup({ onAdvance }) {
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter PIR reference or bag tag number..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+          onChange={e => updateData("loanSearch", e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && updateData("applicationStatus", true)}
         />
-        <ActionButton label="Search" variant="primary" onClick={() => query.trim() && setFound(true)} />
+        <ActionButton label="Search" variant="primary" onClick={() => query.trim() && updateData("applicationStatus", true)} />
       </div>
       <div className="flex gap-2">
         <ActionButton label="New Booking" onClick={() => setWrong(true)} />
@@ -843,9 +843,9 @@ function VC3Claim({ onAdvance }) {
   );
 }
 
-function VC3Trace({ onAdvance }) {
-  const [flagged, setFlagged] = useState(false);
+function VC3Trace({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const flagged = workflowData.delayReason === "flagged";
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">WorldTracer Status — {VC3_CUSTOMER.bagTag}</h2>
@@ -869,7 +869,7 @@ function VC3Trace({ onAdvance }) {
           <ActionButton
             label={flagged ? "✓ MEDICAL PRIORITY Flagged" : "Flag as MEDICAL PRIORITY →"}
             variant={flagged ? "primary" : "default"}
-            onClick={() => { setFlagged(true); setWrong(false); }}
+            onClick={() => { updateData("delayReason", "flagged"); setWrong(false); }}
           />
           <ActionButton label="Mark as Low Priority" onClick={() => setWrong(true)} />
           <ActionButton label="Close Trace" onClick={() => setWrong(true)} />
@@ -886,9 +886,9 @@ function VC3Trace({ onAdvance }) {
   );
 }
 
-function VC3Policy({ onAdvance }) {
-  const [decision, setDecision] = useState(null);
+function VC3Policy({ onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const decision = workflowData.resolution;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">Interim Expenses Policy</h2>
@@ -901,7 +901,7 @@ function VC3Policy({ onAdvance }) {
           <ActionButton
             label="✓ Authorize Interim Expenses + Medical Reimbursement"
             variant={decision === "interim_medical" ? "primary" : "default"}
-            onClick={() => { setDecision("interim_medical"); setWrong(false); }}
+            onClick={() => { updateData("resolution", "interim_medical"); setWrong(false); }}
           />
           <ActionButton label="Authorize Interim Expenses Only (No Medical)" onClick={() => setWrong(true)} />
           <ActionButton label="Issue Final Settlement Now" onClick={() => setWrong(true)} />
@@ -1197,10 +1197,10 @@ const FIN_SCREEN_CONFIGS = {
 };
 
 // ─── GENERIC FINANCE SCREENS ─────────────────────────────────────────────────
-function FinLookup({ config, onAdvance }) {
-  const [query, setQuery] = useState("");
-  const [found, setFound] = useState(false);
+function FinLookup({ config, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const query = workflowData.loanSearch;
+  const found = workflowData.applicationStatus;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
@@ -1209,10 +1209,10 @@ function FinLookup({ config, onAdvance }) {
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={config.placeholder}
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && query.trim() && setFound(true)}
+          onChange={e => updateData("loanSearch", e.target.value)}
+          onKeyDown={e => e.key === "Enter" && query.trim() && updateData("applicationStatus", true)}
         />
-        <ActionButton label={config.searchLabel} variant="primary" onClick={() => query.trim() && setFound(true)} />
+        <ActionButton label={config.searchLabel} variant="primary" onClick={() => query.trim() && updateData("applicationStatus", true)} />
       </div>
       <div className="flex gap-2">
         {config.wrongButtons.map(label => (
@@ -1264,9 +1264,9 @@ function FinDetails({ config, onAdvance }) {
   );
 }
 
-function FinStatus({ config, onAdvance }) {
-  const [done, setDone] = useState(false);
+function FinStatus({ config, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const done = workflowData.delayReason === "done";
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
@@ -1281,7 +1281,7 @@ function FinStatus({ config, onAdvance }) {
         <ActionButton
           label={done ? `✓ ${config.action} Sent` : config.advanceLabel}
           variant={done ? "primary" : "default"}
-          onClick={() => { setDone(true); setWrong(false); }}
+          onClick={() => { updateData("delayReason", "done"); setWrong(false); }}
         />
         {config.wrongButtons.map(label => (
           <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
@@ -1297,9 +1297,9 @@ function FinStatus({ config, onAdvance }) {
   );
 }
 
-function FinPolicy({ config, onAdvance }) {
-  const [decision, setDecision] = useState(null);
+function FinPolicy({ config, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const decision = workflowData.resolution;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
@@ -1312,7 +1312,7 @@ function FinPolicy({ config, onAdvance }) {
           <ActionButton
             label={config.correctLabel}
             variant={decision === "correct" ? "primary" : "default"}
-            onClick={() => { setDecision("correct"); setWrong(false); }}
+            onClick={() => { updateData("resolution", "correct"); setWrong(false); }}
           />
           {config.wrongButtons.map(label => (
             <ActionButton key={label} label={label} onClick={() => setWrong(true)} />
@@ -1330,9 +1330,9 @@ function FinPolicy({ config, onAdvance }) {
   );
 }
 
-function FinApply({ config, onAdvance }) {
-  const [note, setNote] = useState("");
+function FinApply({ config, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const note = workflowData.caseNote;
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-gray-800">{config.title}</h2>
@@ -1348,7 +1348,7 @@ function FinApply({ config, onAdvance }) {
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={config.notePlaceholder}
           value={note}
-          onChange={e => setNote(e.target.value)}
+          onChange={e => updateData("caseNote", e.target.value)}
         />
       </div>
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
@@ -1386,9 +1386,11 @@ function FinCommunicate({ config, onReset }) {
 }
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset, onGoToStep }) {
+export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset, onGoToStep, workflowData, setWorkflowData }) {
   const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
+
+  const updateData = (key, val) => setWorkflowData(prev => ({ ...prev, [key]: val }));
 
   function advance() {
     onAdvance(steps[step].id);
@@ -1473,6 +1475,8 @@ export default function WorkflowPortal({ scenario, persona, step, completed, onA
             onAdvance={advance}
             onReset={onReset}
             config={finConfig}
+            workflowData={workflowData}
+            updateData={updateData}
           />
         </div>
       </div>
