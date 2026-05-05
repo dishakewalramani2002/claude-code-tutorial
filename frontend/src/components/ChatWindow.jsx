@@ -317,6 +317,10 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
     }
   }
 
+  function goToStep(stepIndex) {
+    setPortalStep(stepIndex);
+  }
+
   const modeLabel = training ? "Training" : "Evaluation";
   const headerLabel = `${modeLabel} — ${scenarioLabel || SCENARIO_LABELS[scenario]}`;
 
@@ -371,6 +375,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                 setPortalStep(0);
                 setPortalCompleted([]);
               }}
+              onGoToStep={goToStep}
             />
           </div>
         </div>
