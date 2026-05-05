@@ -40,6 +40,8 @@ export default function App() {
   }
 
   function clearStoredSession() {
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId) localStorage.removeItem(`messages_${sessionId}`);
     localStorage.removeItem("sessionId");
     localStorage.removeItem("sessionConfig");
   }
