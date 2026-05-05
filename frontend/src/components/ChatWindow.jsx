@@ -28,6 +28,13 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
   const [portalCompleted, setPortalCompleted] = useState([]);
   const [error, setError] = useState(null);
   const [portalHeight, setPortalHeight] = useState(280);
+  const [workflowData, setWorkflowData] = useState({
+    loanSearch: "",
+    applicationStatus: "",
+    delayReason: "",
+    resolution: "",
+    caseNote: "",
+  });
 
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
@@ -376,6 +383,8 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
                 setPortalCompleted([]);
               }}
               onGoToStep={goToStep}
+              workflowData={workflowData}
+              setWorkflowData={setWorkflowData}
             />
           </div>
         </div>

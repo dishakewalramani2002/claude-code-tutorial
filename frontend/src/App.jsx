@@ -71,6 +71,7 @@ export default function App() {
   }
 
   function handleModeSelect(config) {
+    clearStoredSession();
     localStorage.setItem("sessionConfig", JSON.stringify(config));
     setSessionConfig(config);
     setView("chat");
@@ -222,6 +223,7 @@ export default function App() {
 
   return (
     <ChatWindow
+      key={`${sessionConfig.scenario}-${sessionConfig.persona}-${sessionConfig.training}`}
       sessionConfig={sessionConfig}
       token={token}
       navProps={navProps}
