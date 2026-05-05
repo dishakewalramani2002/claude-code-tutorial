@@ -245,6 +245,15 @@ async def chat(
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="message cannot be empty")
 
+    session = db.query(models.SessionRecord).filter(
+        models.SessionRecord.id == request.session_id,
+        models.SessionRecord.user_id == current_user.id,
+    ).first()
+    if session is None:
+        raise HTTPException(status_code=400, detail="Invalid or missing session_id")
+    if session.scenario != request.scenario or session.persona != request.persona:
+        raise HTTPException(status_code=400, detail="Session scenario/persona mismatch. Start a new session.")
+
     result = call_llm(
         scenario=request.scenario,
         persona=request.persona,
