@@ -263,18 +263,23 @@ function WrongAction({ onDismiss }) {
   );
 }
 
-function StepSidebar({ steps, current, completed }) {
+function StepSidebar({ steps, current, completed, onGoToStep }) {
   return (
     <div className="w-52 bg-gray-900 text-white flex flex-col py-6 flex-shrink-0">
       <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-5 mb-4">Workflow</p>
       {steps.map((s, i) => {
         const done = completed.includes(s.id);
         const active = current === i;
+        const canNavigate = i <= current || completed.includes(s.id);
         return (
-          <div key={s.id} className={`flex items-center gap-3 px-5 py-3 text-sm ${
-            active ? "bg-gray-700 text-white font-semibold" :
-            done ? "text-green-400" : "text-gray-500"
-          }`}>
+          <div
+            key={s.id}
+            onClick={() => canNavigate && onGoToStep(i)}
+            className={`flex items-center gap-3 px-5 py-3 text-sm ${
+              active ? "bg-gray-700 text-white font-semibold" :
+              done ? "text-green-400" : "text-gray-500"
+            } ${canNavigate ? "cursor-pointer hover:bg-gray-800" : "cursor-default"}`}
+          >
             <span className="w-5 text-center">
               {done ? "✓" : active ? "▶" : `${i + 1}`}
             </span>
@@ -1381,7 +1386,7 @@ function FinCommunicate({ config, onReset }) {
 }
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset }) {
+export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset, onGoToStep }) {
   const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
 
@@ -1460,7 +1465,7 @@ export default function WorkflowPortal({ scenario, persona, step, completed, onA
 
   return (
     <div className="h-full flex">
-      <StepSidebar steps={steps} current={step} completed={completed} />
+      <StepSidebar steps={steps} current={step} completed={completed} onGoToStep={onGoToStep} />
       <div className="flex-1 overflow-y-auto p-6 bg-white">
         <div className="max-w-3xl mx-auto space-y-4">
           {currentStepData && <PromptBanner prompt={currentStepData.prompt} />}
