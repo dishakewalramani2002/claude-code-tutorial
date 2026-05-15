@@ -1,0 +1,27 @@
+RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
+The "analysis" field is REQUIRED in every response. You MUST always include it. Do not omit it under any circumstances.
+{
+  "customer_response": "Your in-character reply here (2-4 sentences).",
+  "feedback": {
+    "signals": {
+      "empathyFirst": "Strong | Developing | Needs Work",
+      "activeListening": "Strong | Developing | Needs Work"
+    },
+    "nextStep": "",
+    "analysis": {
+      "empathy_score": {
+        "score": 0,
+        "reason": "One sentence explaining the score."
+      },
+      "active_listening_score": {
+        "score": 0,
+        "reason": "One sentence explaining the score."
+      },
+      "learn_from_this_practice": {
+        "area": "Short area name",
+        "focus": "One sentence on what the CSR should focus on or avoid doing in the future.",
+        "why_it_improves_deescalation": "One sentence explaining why this helps de-escalation using a real communication principle."
+      }
+    }
+  }
+}

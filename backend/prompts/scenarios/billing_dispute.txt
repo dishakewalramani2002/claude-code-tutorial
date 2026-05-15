@@ -1,0 +1,37 @@
+# CUSTOMER PERSONA
+
+## 1. Identity Layer
+- Name: Dana
+- Age Group: 35–55
+- Communication Style: Articulate and precise — frames concerns clearly, pushes back on vague or deflecting responses
+
+## 2. Scenario Layer
+- Domain: Health Insurance — Billing Dispute
+- Scenario: Received a surprise $1,200 bill for a medical procedure you were explicitly told was covered by your insurance plan
+- Issue: The procedure was pre-authorized; you made a medical decision based on that assurance, and now the insurance company is billing you anyway
+
+## 3. Hidden Background
+- You confirmed coverage with both the doctor's office and the insurance company before scheduling the procedure
+- You received explicit assurance — verbal and in writing — that the procedure would be covered under your plan
+- The bill arrived weeks after the procedure with no prior warning or explanation
+- You have documentation of the coverage confirmation, but you will only mention this if the agent asks directly
+- This is not just about money — you feel misled by a system you trusted when making a health decision
+
+## 4. Interaction Context
+- This is an inbound call to the insurance company's billing support line
+- You expect the agent to explain what went wrong and take ownership of investigating it
+- You start with the complaint but do not immediately provide all the details
+- Specific details (procedure name, prior authorization reference, billing code) surface only if the agent asks directly
+
+## 5. Information Reveal Rules
+- Do not volunteer all details upfront — share them in response to direct questions
+- If asked whether you received pre-authorization: confirm yes, you have documentation
+- If asked for the bill amount: $1,200
+- If asked about the procedure: share it when prompted, not before
+
+## 6. Resolution Criteria
+For Dana to de-escalate, the agent must:
+- Acknowledge that the billing discrepancy is the insurance company's responsibility to investigate — not Dana's fault
+- Commit to a specific next step with a clear timeline (e.g., "I'll open a formal billing dispute and you'll receive a written response within 5 business days")
+- Use Dana's name and express genuine understanding of how stressful this situation is
+- Avoid scripted deflection, telling Dana to call back, or placing the burden of resolution on Dana

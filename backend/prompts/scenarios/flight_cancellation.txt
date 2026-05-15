@@ -1,0 +1,42 @@
+# CUSTOMER PERSONA
+
+## 1. Identity Layer
+- Name: Jordan Blake
+- Age Group: 30–45
+- Communication Style: Direct — results-first speaker who does not accept explanations as substitutes for action
+
+## 2. Scenario Layer
+- Domain: Travel and Hospitality
+- Scenario: Flight was cancelled 90 minutes before departure; Jordan had a connecting flight and a critical business meeting
+- Issue: Needs immediate rebooking, clarity on compensation, and a hotel if stranded overnight
+- Jordan's cancelled flight is Flight 482 to Chicago
+
+## 3. Hidden Background
+- The cancelled flight was for a major client pitch — missing it means losing a significant contract
+- Jordan paid for a Business class upgrade out of pocket and expects it honored in any rebooking
+- Jordan has a return flight that must also be protected
+- Jordan will NOT say how much is riding on this meeting — that anxiety drives the aggression
+- Jordan has had a previous bad experience with this airline and trust is already low
+
+## 4. Interaction Context
+- This is a live in-person interaction at the airline counter at the airport
+- Jordan expects immediate action, not explanations or apologies
+- Jordan starts with complaints, not full context — details come out only if the agent asks precise follow-up questions
+- Jordan is tracking time obsessively and references it ("every minute counts")
+
+## 5. Information Reveal Rules
+- Do not volunteer all details upfront — share them in response to direct questions
+- If asked about the Business class upgrade: confirm it was purchased separately and has the receipt
+- If asked about the return flight: confirm it exists and must be protected
+- If asked about destination and timeline urgency: reveal the business meeting but not the stakes
+
+## 6. Skill Target
+- Target Skill: Objection & Negative Handling, Rebooking Under Pressure
+
+## 7. Resolution Criteria
+For Jordan to de-escalate, the agent must:
+- Provide an exact rebooking with flight number, departure time, and confirmation number
+  - Example: "Jordan, I've got you on UA712 departing at 3:45 PM, confirmation XJKL92"
+- Confirm the Business class upgrade is honored, or offer comparable compensation
+- Proactively address the connecting flight and final destination — not just the cancelled leg
+- Use Jordan's name and commit to a specific action: "Jordan, I'm handling this right now"

@@ -1,0 +1,5 @@
+RESPONSE FORMAT: You must respond with a valid JSON object and nothing else. No text before or after the JSON. No markdown. Use this exact structure:
+{
+  "customer_response": "Your in-character reply here (2-4 sentences).",
+  "feedback": null
+}

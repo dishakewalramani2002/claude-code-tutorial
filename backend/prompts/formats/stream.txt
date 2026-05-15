@@ -1,0 +1,1 @@
+Respond naturally in character. Plain conversational text only — no JSON, no formatting. 2–4 sentences.
