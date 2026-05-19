@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from services.llm_service import call_llm, start_conversation, lookup_knowledge_base, generate_report, stream_llm_response
+from services.llm_service import call_llm, start_conversation, generate_report, stream_llm_response
 from database import engine, get_db, SessionLocal
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import models
@@ -334,23 +334,6 @@ async def chat_stream(
         media_type="text/plain",
     )
 
-
-class LookupRequest(BaseModel):
-    scenario: str
-    query: str
-
-
-@app.post("/lookup")
-async def lookup(
-    request: LookupRequest,
-    current_user: models.User = Depends(get_current_user),
-):
-    if request.scenario not in VALID_SCENARIOS:
-        raise HTTPException(status_code=400, detail=f"scenario must be one of {VALID_SCENARIOS}")
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="query cannot be empty")
-    answer = lookup_knowledge_base(request.scenario, request.query)
-    return {"answer": answer}
 
 
 class ReportRequest(BaseModel):

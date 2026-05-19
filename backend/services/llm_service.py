@@ -18,22 +18,18 @@ SCENARIOS = {
     "flight_cancellation": {
         "file": "flight_cancellation",
         "opener": "flight_cancellation",
-        "kb": "kb_flight_cancellation_prompt.txt",
     },
     "baggage_delay": {
         "file": "baggage_delay",
         "opener": "baggage_delay",
-        "kb": "kb_baggage_delay_prompt.txt",
     },
     "loan_delay": {
         "file": "loan_delay",
         "opener": "loan_delay",
-        "kb": "kb_loan_delay_prompt.txt",
     },
     "refund_request": {
         "file": "refund_request",
         "opener": "refund_request",
-        "kb": "kb_refund_request_prompt.txt",
     },
 }
 
@@ -207,30 +203,6 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         pass
 
     return {"customer_response": raw_text, "feedback": None}
-
-
-def lookup_knowledge_base(scenario: str, query: str) -> str:
-    if scenario not in SCENARIOS:
-        raise ValueError(f"Unknown scenario: '{scenario}'. Valid options: {list(SCENARIOS)}")
-
-    system_prompt = load_prompt(SCENARIOS[scenario]["kb"])
-
-    try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query},
-            ],
-            max_tokens=512,
-            temperature=0.3,
-            timeout=LLM_TIMEOUT,
-        )
-    except Exception as e:
-        print(f"ERROR lookup_knowledge_base LLM call failed: {e}")
-        return "I'm having trouble responding right now. Please try again."
-
-    return response.choices[0].message.content.strip()
 
 
 # --- Evaluation ---
