@@ -48,22 +48,7 @@ const DOMAINS = [
   },
 ];
 
-// Health Insurance is kept as a standalone entry under a separate domain
-const HEALTHCARE_DOMAIN = {
-  id: "healthcare",
-  label: "Healthcare",
-  icon: "🏥",
-  available: true,
-  scenarios: [
-    {
-      id: "vc1",
-      label: "Health Insurance Billing",
-      description: "Handle a member disputing a surprise $1,200 medical bill they were told would be covered.",
-    },
-  ],
-};
-
-const ALL_DOMAINS = [HEALTHCARE_DOMAIN, ...DOMAINS];
+const ALL_DOMAINS = DOMAINS;
 
 const PERSONAS = [
   {

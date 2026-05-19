@@ -15,11 +15,6 @@ client = build_client()
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 SCENARIOS = {
-    "vc1": {
-        "file": "billing_dispute",
-        "opener": "vc1",
-        "kb": "kb_vc1_prompt.txt",
-    },
     "vc2": {
         "file": "flight_cancellation",
         "opener": "vc2",

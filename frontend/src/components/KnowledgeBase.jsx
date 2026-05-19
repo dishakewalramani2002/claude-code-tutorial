@@ -3,13 +3,6 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 
 const SUGGESTIONS = {
-  vc1: [
-    "Why would a covered procedure still be billed to the patient?",
-    "How do I initiate a claim dispute?",
-    "What documents are needed for a billing appeal?",
-    "What is the timeline for resolving a billing dispute?",
-    "How do I check if a procedure needed prior authorization?",
-  ],
   vc2: [
     "What compensation is owed for an airline-caused cancellation?",
     "How do I rebook a passenger on the next available flight?",
@@ -27,7 +20,6 @@ const SUGGESTIONS = {
 };
 
 const DOMAIN_LABELS = {
-  vc1: "Health Insurance",
   vc2: "Airline – Flight Cancellation",
   vc3: "Airline – Lost Baggage",
 };

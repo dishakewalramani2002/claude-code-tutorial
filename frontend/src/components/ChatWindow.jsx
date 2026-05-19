@@ -11,7 +11,6 @@ console.log("BASE_URL:", BASE_URL);
 const API_URL = `${BASE_URL}/chat`;
 
 const SCENARIO_LABELS = {
-  vc1: "Health Insurance Billing",
   vc2: "Flight Cancellation",
   vc3: "Lost Baggage",
 };

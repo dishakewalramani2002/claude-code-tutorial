@@ -1387,7 +1387,7 @@ function FinCommunicate({ config, onReset }) {
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset, onGoToStep, workflowData, setWorkflowData }) {
-  const stepsMap = { vc1: VC1_STEPS, vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
+  const stepsMap = { vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
 
   const updateData = (key, val) => setWorkflowData(prev => ({ ...prev, [key]: val }));
@@ -1456,7 +1456,6 @@ export default function WorkflowPortal({ scenario, persona, step, completed, onA
   }
 
   const screenMap = {
-    vc1: [VC1Lookup, VC1Bills, VC1Detail, VC1Policy, VC1Decision, VC1Communicate],
     vc2: [VC2Lookup, VC2Flight, VC2Rebook, VC2Policy, VC2Apply, VC2Communicate],
     vc3: [VC3Lookup, VC3Claim, VC3Trace, VC3Policy, VC3Apply, VC3Communicate],
     loan_delay: [FinLookup, FinDetails, FinStatus, FinPolicy, FinApply, FinCommunicate],

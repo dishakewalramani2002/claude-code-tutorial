@@ -1,7 +1,6 @@
 import NavBar from "./NavBar";
 
 const SCENARIO_LABELS = {
-  vc1: "Health Insurance Billing",
   vc2: "Flight Cancellation",
   vc3: "Lost Baggage",
 };
