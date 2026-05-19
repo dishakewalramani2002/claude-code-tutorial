@@ -115,10 +115,7 @@ def list_sessions(
             "persona": s.persona,
             "training": s.training,
             "created_at": s.created_at.isoformat(),
-            "overall_score": report.overall_score if report else None,
-            "empathy_score": report.empathy_score if report else None,
-            "transparency_score": report.transparency_score if report else None,
-            "ownership_score": report.ownership_score if report else None,
+            "has_report": report is not None,
         })
     return result
 
@@ -355,16 +352,11 @@ async def report(
 
     result = generate_report(history=request.history)
 
-    perf = result.get("performance", {})
     report_record = models.ReportRecord(
         session_id=request.session_id,
         scenario=request.scenario,
         persona=request.persona,
         training=request.training,
-        empathy_score=perf.get("empathy_score", 0),
-        transparency_score=perf.get("transparency_score", 0),
-        ownership_score=perf.get("ownership_score", 0),
-        overall_score=perf.get("overall_score", 0),
         report_json=json_lib.dumps(result),
     )
     db.add(report_record)

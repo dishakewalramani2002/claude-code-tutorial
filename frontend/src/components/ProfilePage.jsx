@@ -10,22 +10,6 @@ const PERSONA_EMOJIS = {
   anxious: "😰",
 };
 
-function ScoreBar({ label, score }) {
-  if (score === null || score === undefined) return null;
-  const color = score >= 70 ? "bg-green-500" : score >= 40 ? "bg-yellow-500" : "bg-red-500";
-  return (
-    <div className="mb-1">
-      <div className="flex justify-between text-xs mb-0.5">
-        <span className="text-gray-500">{label}</span>
-        <span className="font-semibold text-gray-700">{score}%</span>
-      </div>
-      <div className="w-full bg-gray-100 rounded-full h-1.5">
-        <div className={`${color} h-1.5 rounded-full`} style={{ width: `${score}%` }} />
-      </div>
-    </div>
-  );
-}
-
 const SIGNAL_COLORS = {
   "Strong":     "bg-green-100 text-green-700",
   "Developing": "bg-yellow-100 text-yellow-700",
@@ -44,7 +28,6 @@ function SignalBadge({ label, value }) {
 
 function SessionDetail({ session, onBack }) {
   const { messages = [], report } = session;
-  const perf = report?.performance ?? {};
 
   return (
     <div className="space-y-6">
@@ -61,24 +44,6 @@ function SessionDetail({ session, onBack }) {
           </div>
         </div>
       </div>
-
-      {/* Scores */}
-      {perf.overall_score !== undefined && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Performance</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <div className="text-4xl font-bold text-gray-900 mb-1">{perf.overall_score}%</div>
-              <div className="text-sm text-gray-500">Overall Score</div>
-            </div>
-            <div className="space-y-2">
-              <ScoreBar label="Empathy" score={perf.empathy_score} />
-              <ScoreBar label="Transparency" score={perf.transparency_score} />
-              <ScoreBar label="Ownership" score={perf.ownership_score} />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Conversation */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -112,15 +77,34 @@ function SessionDetail({ session, onBack }) {
         </div>
       </div>
 
-      {/* Key learnings */}
-      {report?.key_learnings?.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-800 mb-3">Key Learnings</h3>
-          <ul className="space-y-2">
-            {report.key_learnings.map((l, i) => (
-              <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-blue-500 mt-0.5">•</span>{l}</li>
-            ))}
-          </ul>
+      {/* Session coaching */}
+      {report?.session_coaching && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <h3 className="font-semibold text-gray-800">Session Coaching</h3>
+          {report.session_coaching.overallPerformance && (
+            <p className="text-sm text-gray-700">{report.session_coaching.overallPerformance}</p>
+          )}
+          {report.session_coaching.keepDoing && (
+            <div>
+              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Keep Doing</p>
+              <p className="text-sm text-gray-700">{report.session_coaching.keepDoing}</p>
+            </div>
+          )}
+          {report.session_coaching.keyPatternToImprove && (
+            <div>
+              <p className="text-xs font-semibold text-yellow-700 uppercase tracking-wide mb-1">Pattern to Improve</p>
+              <p className="text-sm text-gray-700">{report.session_coaching.keyPatternToImprove}</p>
+            </div>
+          )}
+          {report.session_coaching.actionableImprovement && (
+            <div>
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Actionable Improvement</p>
+              <p className="text-sm text-gray-700">{report.session_coaching.actionableImprovement}</p>
+            </div>
+          )}
+          {report.session_coaching.encouragement && (
+            <p className="text-sm text-gray-500 italic">{report.session_coaching.encouragement}</p>
+          )}
         </div>
       )}
     </div>
@@ -243,13 +227,8 @@ export default function ProfilePage({ token, navProps, onBack }) {
                     {s.persona.charAt(0).toUpperCase() + s.persona.slice(1)} · {s.training ? "Training" : "Evaluation"} · {new Date(s.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                {s.overall_score !== null ? (
-                  <div className="text-right flex-shrink-0">
-                    <p className={`text-2xl font-bold ${s.overall_score >= 70 ? "text-green-600" : s.overall_score >= 40 ? "text-yellow-600" : "text-red-600"}`}>
-                      {s.overall_score}%
-                    </p>
-                    <p className="text-xs text-gray-400">Overall</p>
-                  </div>
+                {s.has_report ? (
+                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex-shrink-0">Report</span>
                 ) : (
                   <span className="text-xs text-gray-400 flex-shrink-0">No report</span>
                 )}
