@@ -15,15 +15,15 @@ client = build_client()
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 SCENARIOS = {
-    "vc2": {
+    "flight_cancellation": {
         "file": "flight_cancellation",
-        "opener": "vc2",
-        "kb": "kb_vc2_prompt.txt",
+        "opener": "flight_cancellation",
+        "kb": "kb_flight_cancellation_prompt.txt",
     },
-    "vc3": {
+    "baggage_delay": {
         "file": "baggage_delay",
-        "opener": "vc3",
-        "kb": "kb_vc3_prompt.txt",
+        "opener": "baggage_delay",
+        "kb": "kb_baggage_delay_prompt.txt",
     },
     "loan_delay": {
         "file": "loan_delay",

@@ -9,12 +9,12 @@ const DOMAINS = [
     available: true,
     scenarios: [
       {
-        id: "vc2",
+        id: "flight_cancellation",
         label: "Flight Cancellation",
         description: "Handle a passenger whose flight was cancelled due to weather. Navigate rebooking options and compensation policy.",
       },
       {
-        id: "vc3",
+        id: "baggage_delay",
         label: "Lost Baggage",
         description: "Assist a passenger whose checked bag has been missing for two days. Trace the bag and arrange interim expenses.",
       },

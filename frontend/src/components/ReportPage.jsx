@@ -1,8 +1,8 @@
 import NavBar from "./NavBar";
 
 const SCENARIO_LABELS = {
-  vc2: "Flight Cancellation",
-  vc3: "Lost Baggage",
+  flight_cancellation: "Flight Cancellation",
+  baggage_delay: "Lost Baggage",
 };
 
 const SIGNAL_COLORS = {

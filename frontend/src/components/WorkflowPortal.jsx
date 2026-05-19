@@ -1387,7 +1387,7 @@ function FinCommunicate({ config, onReset }) {
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function WorkflowPortal({ scenario, persona, step, completed, onAdvance, onReset, onGoToStep, workflowData, setWorkflowData }) {
-  const stepsMap = { vc2: VC2_STEPS, vc3: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
+  const stepsMap = { flight_cancellation: VC2_STEPS, baggage_delay: VC3_STEPS, loan_delay: LOAN_DELAY_STEPS, refund_request: REFUND_REQUEST_STEPS };
   const steps = stepsMap[scenario] ?? VC2_STEPS;
 
   const updateData = (key, val) => setWorkflowData(prev => ({ ...prev, [key]: val }));
@@ -1456,13 +1456,13 @@ export default function WorkflowPortal({ scenario, persona, step, completed, onA
   }
 
   const screenMap = {
-    vc2: [VC2Lookup, VC2Flight, VC2Rebook, VC2Policy, VC2Apply, VC2Communicate],
-    vc3: [VC3Lookup, VC3Claim, VC3Trace, VC3Policy, VC3Apply, VC3Communicate],
+    flight_cancellation: [VC2Lookup, VC2Flight, VC2Rebook, VC2Policy, VC2Apply, VC2Communicate],
+    baggage_delay: [VC3Lookup, VC3Claim, VC3Trace, VC3Policy, VC3Apply, VC3Communicate],
     loan_delay: [FinLookup, FinDetails, FinStatus, FinPolicy, FinApply, FinCommunicate],
     refund_request: [FinLookup, FinDetails, FinStatus, FinPolicy, FinApply, FinCommunicate],
   };
 
-  const Screen = (screenMap[scenario] ?? screenMap.vc2)[Math.min(step, 5)];
+  const Screen = (screenMap[scenario] ?? screenMap.flight_cancellation)[Math.min(step, 5)];
 
   return (
     <div className="h-full flex">

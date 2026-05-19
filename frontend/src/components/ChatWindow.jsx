@@ -11,8 +11,8 @@ console.log("BASE_URL:", BASE_URL);
 const API_URL = `${BASE_URL}/chat`;
 
 const SCENARIO_LABELS = {
-  vc2: "Flight Cancellation",
-  vc3: "Lost Baggage",
+  flight_cancellation: "Flight Cancellation",
+  baggage_delay: "Lost Baggage",
 };
 
 export default function ChatWindow({ sessionConfig, token, navProps, onEndSession, onAuthExpired, storedSessionId, onSessionStarted, onSessionRestoreFailed }) {

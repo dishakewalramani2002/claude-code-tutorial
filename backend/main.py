@@ -24,12 +24,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-VALID_SCENARIOS = {"vc2", "vc3", "loan_delay", "refund_request"}
+VALID_SCENARIOS = {"flight_cancellation", "baggage_delay", "loan_delay", "refund_request"}
 VALID_PERSONAS = {"angry", "confused", "demanding", "anxious"}
 
 SCENARIO_LABELS = {
-    "vc2": "Flight Cancellation",
-    "vc3": "Lost Baggage",
+    "flight_cancellation": "Flight Cancellation",
+    "baggage_delay": "Lost Baggage",
     "loan_delay": "Loan Delay",
     "refund_request": "Refund Request",
 }

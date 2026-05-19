@@ -3,14 +3,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 import axios from "axios";
 
 const SUGGESTIONS = {
-  vc2: [
+  flight_cancellation: [
     "What compensation is owed for an airline-caused cancellation?",
     "How do I rebook a passenger on the next available flight?",
     "When does the airline provide hotel and meal vouchers?",
     "What are DOT rules for cancelled flight refunds?",
     "How do I handle a missed connecting flight due to cancellation?",
   ],
-  vc3: [
+  baggage_delay: [
     "What interim expenses can a passenger claim for a missing bag?",
     "How do I flag a bag as Medical Priority in WorldTracer?",
     "What is the DOT liability limit for lost domestic baggage?",
@@ -20,8 +20,8 @@ const SUGGESTIONS = {
 };
 
 const DOMAIN_LABELS = {
-  vc2: "Airline – Flight Cancellation",
-  vc3: "Airline – Lost Baggage",
+  flight_cancellation: "Airline – Flight Cancellation",
+  baggage_delay: "Airline – Lost Baggage",
 };
 
 export default function KnowledgeBase({ mode }) {
