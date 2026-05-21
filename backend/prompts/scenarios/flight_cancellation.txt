@@ -1,3 +1,26 @@
+PORTAL_DATA
+
+{
+  "customer_name": "Jordan Blake",
+  "first_name": "Jordan",
+  "booking": "UA-8821",
+  "tier": "Silver MileagePlus",
+  "phone": "(213) 555-0047",
+  "flight": "UA 4492",
+  "route": "LAX → ORD → JFK",
+  "dep_time": "Today 11:30 AM",
+  "status": "CANCELLED – Weather (Ground Stop ORD)",
+  "reason": "Weather",
+  "new_flight": "UA 4510",
+  "new_route": "LAX → JFK Direct",
+  "new_dep_time": "Tomorrow 8:00 AM",
+  "new_arr_time": "4:22 PM",
+  "new_confirmation": "UA-9934",
+  "case_number": "IRROP-2024-08821"
+}
+
+---
+
 # CUSTOMER PERSONA
 
 ## 1. Identity Layer

@@ -1,15 +1,15 @@
 {
   "scenario": "flight_cancellation",
   "customer": {
-    "name": "Jordan Lee",
-    "booking": "UA-8821",
-    "tier": "Silver MileagePlus",
-    "phone": "(213) 555-0047",
-    "flight": "UA 4492",
-    "route": "LAX → ORD → JFK",
-    "depTime": "Today 11:30 AM",
-    "status": "CANCELLED – Weather (Ground Stop ORD)",
-    "reason": "Weather"
+    "name": "{{customer_name}}",
+    "booking": "{{booking}}",
+    "tier": "{{tier}}",
+    "phone": "{{phone}}",
+    "flight": "{{flight}}",
+    "route": "{{route}}",
+    "depTime": "{{dep_time}}",
+    "status": "{{status}}",
+    "reason": "{{reason}}"
   },
   "rebooking": [
     { "id": "F1", "flight": "UA 4510", "route": "LAX → JFK (Direct)", "dep": "Tomorrow 8:00 AM", "arr": "Tomorrow 4:22 PM", "seats": "Available", "type": "direct" },
@@ -78,20 +78,20 @@
     },
     "apply": {
       "confirmData": [
-        ["New Flight", "UA 4510 — LAX → JFK Direct"],
-        ["New Departure", "Tomorrow 8:00 AM"],
-        ["New Confirmation", "UA-9934"],
+        ["New Flight", "{{new_flight}} — {{new_route}}"],
+        ["New Departure", "{{new_dep_time}}"],
+        ["New Confirmation", "{{new_confirmation}}"],
         ["Compensation", "$15 Meal Voucher — Issued to email"],
         ["Hotel", "Not Applicable (Weather)"]
       ],
       "wrongButtons": ["Upgrade to Business Class", "Issue Hotel Voucher"]
     },
     "communicate": {
-      "customerName": "Jordan",
-      "script": "Jordan, I've taken care of everything for you. I've rebooked you on UA 4510, a direct flight from LAX to JFK departing tomorrow at 8:00 AM, arriving at 4:22 PM. Your new confirmation number is UA-9934.\n\nI've also issued a $15 meal voucher to your email on file, which you can use in any airport restaurant today. I do want to be upfront — because this cancellation was due to a weather ground stop in Chicago, we're not able to offer additional cash compensation under DOT guidelines, but we're doing everything we can to get you to your destination as quickly as possible.\n\nIs there anything else I can help you with today?",
-      "caseNumber": "IRROP-2024-08821",
+      "customerName": "{{first_name}}",
+      "script": "{{first_name}}, I've taken care of everything for you. I've rebooked you on {{new_flight}}, a direct flight from LAX to JFK departing {{new_dep_time}}, arriving at {{new_arr_time}}. Your new confirmation number is {{new_confirmation}}.\n\nI've also issued a $15 meal voucher to your email on file, which you can use in any airport restaurant today. I do want to be upfront — because this cancellation was due to a weather ground stop in Chicago, we're not able to offer additional cash compensation under DOT guidelines, but we're doing everything we can to get you to your destination as quickly as possible.\n\nIs there anything else I can help you with today?",
+      "caseNumber": "{{case_number}}",
       "caseStatus": "Closed",
-      "resolution": "Rebooked UA-9934 + $15 meal voucher issued."
+      "resolution": "Rebooked {{new_confirmation}} + $15 meal voucher issued."
     }
   }
 }

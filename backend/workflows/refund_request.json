@@ -45,26 +45,26 @@
       "searchLabel": "Search",
       "wrongButtons": ["File Dispute Claim", "Block Card"],
       "customer": {
-        "name": "Morgan Riley",
-        "transactionId": "TXN-2024-05521",
-        "amount": "$340.00",
-        "date": "2026-03-25",
-        "merchant": "Unknown Merchant",
-        "phone": "(628) 555-0134",
-        "status": "FAILED – Pending Reversal"
+        "name": "{{default_customer_name}}",
+        "transactionId": "{{default_transaction_id}}",
+        "amount": "{{default_amount}}",
+        "date": "{{default_date}}",
+        "merchant": "{{default_merchant}}",
+        "phone": "{{default_phone}}",
+        "status": "{{default_status}}"
       },
       "advanceLabel": "View Transaction Details →"
     },
     {
       "title": "Payment Details",
       "data": {
-        "type": "Debit Card Payment",
-        "processorRef": "PRO-88214",
-        "failureCode": "GATEWAY_TIMEOUT",
-        "merchantResponse": "Transaction not received",
-        "daysSince": "3 days",
-        "refundEligibility": "ELIGIBLE – Automatic Reversal",
-        "estimatedReturn": "1–3 business days"
+        "type": "{{default_payment_type}}",
+        "processorRef": "{{default_processor_ref}}",
+        "failureCode": "{{default_failure_code}}",
+        "merchantResponse": "{{default_merchant_response}}",
+        "daysSince": "{{default_days_since}}",
+        "refundEligibility": "{{default_refund_eligibility}}",
+        "estimatedReturn": "{{default_estimated_return}}"
       },
       "advanceLabel": "Check Eligibility →",
       "wrongButtons": ["Chargeback to Merchant", "Flag for Fraud Investigation"]
@@ -73,7 +73,7 @@
       "title": "Refund Eligibility Check",
       "statusBadge": "ELIGIBLE",
       "badgeGood": true,
-      "statusText": "Transaction failure code GATEWAY_TIMEOUT qualifies for automatic reversal. Merchant has confirmed the transaction was not received on their end.",
+      "statusText": "Transaction failure code {{default_failure_code}} qualifies for automatic reversal. Merchant has confirmed the transaction was not received on their end.",
       "action": "Check Eligibility",
       "advanceLabel": "Check Eligibility →",
       "wrongButtons": ["Deny Refund – Dispute Required", "Escalate to Fraud Team"]
@@ -92,46 +92,46 @@
     {
       "title": "Process Refund",
       "summary": [
-        ["Customer", "Morgan Riley"],
-        ["Transaction ID", "TXN-2024-05521"],
-        ["Refund Amount", "$340.00"],
+        ["Customer", "{{default_customer_name}}"],
+        ["Transaction ID", "{{default_transaction_id}}"],
+        ["Refund Amount", "{{default_amount}}"],
         ["Method", "Automatic Reversal + Provisional Credit"],
         ["Provisional Credit", "Applied today"],
         ["Full Reversal ETA", "1–3 business days"]
       ],
       "wrongButtons": ["Issue Credit Only", "Escalate to Supervisor"],
       "advanceLabel": "Initiate Refund →",
-      "notePlaceholder": "e.g. Customer called re: failed $340 transaction on 03/25. GATEWAY_TIMEOUT confirmed. Automatic reversal initiated. Provisional credit of $340 applied today."
+      "notePlaceholder": "e.g. Customer called re: failed {{default_amount}} transaction on {{default_date_short}}. {{default_failure_code}} confirmed. Automatic reversal initiated. Provisional credit of {{default_amount}} applied today."
     },
     {
       "title": "Case Resolved — Communicate to Customer",
-      "customerName": "Morgan",
-      "script": "\"Morgan, I've reviewed your account and confirmed that the $340 transaction on March 25th failed on our end — the failure code shows a gateway timeout, which means the merchant never actually received the funds.\n\nI've initiated an automatic reversal, which will return the $340 to your account within 1 to 3 business days. I've also applied a provisional credit of $340 to your account effective today so you have access to those funds right away.\n\nIs there anything else I can help you with?\"",
-      "caseRef": "REFUND-2024-05521",
+      "customerName": "{{default_first_name}}",
+      "script": "\"{{default_first_name}}, I've reviewed your account and confirmed that the {{default_amount}} transaction on {{default_date_display}} failed on our end — the failure code shows a gateway timeout, which means the merchant never actually received the funds.\n\nI've initiated an automatic reversal, which will return the {{default_amount}} to your account within 1 to 3 business days. I've also applied a provisional credit of {{default_amount}} to your account effective today so you have access to those funds right away.\n\nIs there anything else I can help you with?\"",
+      "caseRef": "{{default_case_ref}}",
       "caseStatus": "Closed",
-      "resolution": "Automatic reversal initiated. Provisional credit of $340 applied. Customer informed."
+      "resolution": "Automatic reversal initiated. Provisional credit of {{default_amount}} applied. Customer informed."
     }
   ],
   "personas": {
     "angry": {
-      "name": "George Pan",
-      "firstName": "George",
-      "phone": "(628) 555-0198",
+      "name": "{{customer_name}}",
+      "firstName": "{{first_name}}",
+      "phone": "{{phone}}",
       "transaction": {
-        "orderId": "59214",
-        "amount": "$349.99",
-        "date": "2026-03-25",
-        "product": "BaristaPro 350 Espresso Machine",
-        "merchant": "Home Appliances Direct",
-        "status": "FAILED – Pending Refund"
+        "orderId": "{{order_id}}",
+        "amount": "{{amount}}",
+        "date": "{{date}}",
+        "product": "{{product}}",
+        "merchant": "{{merchant}}",
+        "status": "{{status}}"
       },
       "details": {
         "type": "Credit Card Payment",
-        "failureCode": "DEFECTIVE_PRODUCT",
-        "merchantResponse": "Return request acknowledged",
-        "daysSince": "7 days",
-        "refundEligibility": "ELIGIBLE – Defective Item Return",
-        "estimatedReturn": "3–5 business days"
+        "failureCode": "{{failure_code}}",
+        "merchantResponse": "{{merchant_response}}",
+        "daysSince": "{{days_since}}",
+        "refundEligibility": "{{refund_eligibility}}",
+        "estimatedReturn": "{{estimated_return}}"
       }
     }
   }

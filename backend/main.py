@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from services.llm_service import call_llm, start_conversation, generate_report, stream_llm_response
+from services.prompt_metadata import extract_portal_data, inject_metadata
 from database import engine, get_db, SessionLocal
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import models
@@ -369,7 +370,9 @@ async def report(
 def load_workflow_config(scenario: str) -> dict:
     path = os.path.join(os.path.dirname(__file__), "workflows", f"{scenario}.json")
     with open(path) as f:
-        return json_lib.load(f)
+        template = json_lib.load(f)
+    metadata = extract_portal_data(scenario)
+    return inject_metadata(template, metadata)
 
 
 @app.get("/workflow/{scenario}")

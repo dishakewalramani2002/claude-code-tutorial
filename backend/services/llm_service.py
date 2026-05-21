@@ -47,7 +47,9 @@ def load_prompt(filename: str) -> str:
 def load_scenario_prompt(scenario: str) -> str:
     if scenario not in SCENARIOS:
         raise ValueError(f"Unknown scenario: '{scenario}'. Valid options: {list(SCENARIOS)}")
-    return load_prompt(f"scenarios/{SCENARIOS[scenario]['file']}.txt")
+    from services.prompt_metadata import strip_portal_data
+    raw = load_prompt(f"scenarios/{SCENARIOS[scenario]['file']}.txt")
+    return strip_portal_data(raw)
 
 
 def load_emotion_prompt(persona: str) -> str:

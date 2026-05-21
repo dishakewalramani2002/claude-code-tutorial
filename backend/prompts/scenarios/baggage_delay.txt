@@ -1,3 +1,20 @@
+PORTAL_DATA
+
+{
+  "customer_name": "Alex Rivera",
+  "first_name": "Alex",
+  "booking": "UA-5521",
+  "flight": "UA 8834",
+  "route": "ORD → ATL → MIA",
+  "bag_tag": "BA-0441219",
+  "pir_ref": "MIA0441219",
+  "tier": "United MileagePlus",
+  "phone": "(312) 555-0183",
+  "case_number": "BAG-2024-04412"
+}
+
+---
+
 # CUSTOMER PERSONA
 
 ## 1. Identity Layer

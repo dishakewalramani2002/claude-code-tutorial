@@ -1,3 +1,30 @@
+PORTAL_DATA
+
+{
+  "customer_name": "Avery Collins",
+  "first_name": "Avery",
+
+  "default_customer_name": "Alex Chen",
+  "default_first_name": "Alex",
+  "default_loan_id": "LN-2024-00892",
+  "default_loan_type": "Personal Loan",
+  "default_amount": "$15,000",
+  "default_applied_date": "2026-03-10",
+  "default_phone": "(415) 555-0172",
+  "default_status": "PENDING – Under Review",
+  "default_stage": "Underwriting Review",
+  "default_expected_date": "2026-03-17 (original)",
+  "default_current_delay": "11 days overdue",
+  "default_delay_reason": "Additional income verification required",
+  "default_assigned_to": "Underwriting Team B",
+  "default_next_step": "Income documents resubmission",
+  "default_delay_action": "Request Documents",
+  "default_summary_status": "Awaiting income verification resubmission",
+  "default_case_ref": "LOAN-2024-00892"
+}
+
+---
+
 # CUSTOMER PERSONA
 
 ## 1. Identity Layer

@@ -1,15 +1,15 @@
 {
   "scenario": "baggage_delay",
   "customer": {
-    "name": "Alex Rivera",
-    "booking": "UA-5521",
-    "flight": "UA 8834",
-    "route": "ORD → ATL → MIA",
+    "name": "{{customer_name}}",
+    "booking": "{{booking}}",
+    "flight": "{{flight}}",
+    "route": "{{route}}",
     "travelDate": "2 days ago",
-    "bagTag": "BA-0441219",
-    "pirRef": "MIA0441219",
-    "tier": "United MileagePlus",
-    "phone": "(312) 555-0183"
+    "bagTag": "{{bag_tag}}",
+    "pirRef": "{{pir_ref}}",
+    "tier": "{{tier}}",
+    "phone": "{{phone}}"
   },
   "trace": {
     "status": "EXPEDITE – Active Search",
@@ -96,9 +96,9 @@
       "wrongButtons": ["Escalate to Supervisor", "Issue Travel Credit Instead"]
     },
     "communicate": {
-      "customerName": "Alex",
-      "script": "Alex, I've pulled up your bag trace. Your bag is still in our system with EXPEDITE status — the last scan was in the gate area at Chicago O'Hare, and our team is actively working on it. The estimated resolution is 24 to 72 hours.\n\nBecause your bag contains prescription medication, I've flagged the file as Medical Priority, which means your case gets daily check-ins from our baggage team. For your medication specifically, please go to any pharmacy, get an emergency supply, and save the receipt along with a copy of your prescription — we'll reimburse that fully.\n\nI've also authorized interim expense reimbursement of up to $100 per day for up to five days for essentials like clothing and toiletries. I'm sending a reimbursement form to your email right now. Is there anything else I can help you with?",
-      "caseNumber": "BAG-2024-04412",
+      "customerName": "{{first_name}}",
+      "script": "{{first_name}}, I've pulled up your bag trace. Your bag is still in our system with EXPEDITE status — the last scan was in the gate area at Chicago O'Hare, and our team is actively working on it. The estimated resolution is 24 to 72 hours.\n\nBecause your bag contains prescription medication, I've flagged the file as Medical Priority, which means your case gets daily check-ins from our baggage team. For your medication specifically, please go to any pharmacy, get an emergency supply, and save the receipt along with a copy of your prescription — we'll reimburse that fully.\n\nI've also authorized interim expense reimbursement of up to $100 per day for up to five days for essentials like clothing and toiletries. I'm sending a reimbursement form to your email right now. Is there anything else I can help you with?",
+      "caseNumber": "{{case_number}}",
       "caseStatus": "Open – EXPEDITE / Medical Priority",
       "resolution": "Medical Priority flagged. Interim expenses authorized. Reimbursement form sent."
     }

@@ -45,26 +45,26 @@
       "searchLabel": "Search",
       "wrongButtons": ["New Loan Application", "Close Application"],
       "customer": {
-        "name": "Alex Chen",
-        "loanId": "LN-2024-00892",
-        "type": "Personal Loan",
-        "amount": "$15,000",
-        "appliedDate": "2026-03-10",
-        "phone": "(415) 555-0172",
-        "status": "PENDING – Under Review"
+        "name": "{{default_customer_name}}",
+        "loanId": "{{default_loan_id}}",
+        "type": "{{default_loan_type}}",
+        "amount": "{{default_amount}}",
+        "appliedDate": "{{default_applied_date}}",
+        "phone": "{{default_phone}}",
+        "status": "{{default_status}}"
       },
       "advanceLabel": "Check Processing Status →"
     },
     {
       "title": "Application Status",
       "data": {
-        "stage": "Underwriting Review",
-        "submittedDate": "2026-03-10",
-        "expectedDate": "2026-03-17 (original)",
-        "currentDelay": "11 days overdue",
-        "delayReason": "Additional income verification required",
-        "assignedTo": "Underwriting Team B",
-        "nextStep": "Income documents resubmission"
+        "stage": "{{default_stage}}",
+        "submittedDate": "{{default_applied_date}}",
+        "expectedDate": "{{default_expected_date}}",
+        "currentDelay": "{{default_current_delay}}",
+        "delayReason": "{{default_delay_reason}}",
+        "assignedTo": "{{default_assigned_to}}",
+        "nextStep": "{{default_next_step}}"
       },
       "advanceLabel": "View Delay Details →",
       "wrongButtons": ["Approve Immediately", "Transfer to Another Branch"]
@@ -74,7 +74,7 @@
       "statusBadge": "DELAYED",
       "badgeGood": false,
       "statusText": "Income verification documents are required. Customer must resubmit pay stubs or recent bank statements before underwriting can proceed.",
-      "action": "Request Documents",
+      "action": "{{default_delay_action}}",
       "advanceLabel": "Request Documents →",
       "wrongButtons": ["Deny Application", "Escalate to Legal"]
     },
@@ -92,12 +92,12 @@
     {
       "title": "Apply Actions",
       "summary": [
-        ["Customer", "Alex Chen"],
-        ["Loan ID", "LN-2024-00892"],
+        ["Customer", "{{default_customer_name}}"],
+        ["Loan ID", "{{default_loan_id}}"],
         ["Action", "Document Request Issued"],
         ["Deadline", "5 business days from today"],
-        ["Status", "Awaiting income verification resubmission"],
-        ["Assigned", "Underwriting Team B"]
+        ["Status", "{{default_summary_status}}"],
+        ["Assigned", "{{default_assigned_to}}"]
       ],
       "wrongButtons": ["Escalate to Supervisor", "Cancel Application"],
       "advanceLabel": "Confirm & Apply →",
@@ -105,16 +105,16 @@
     },
     {
       "title": "Case Updated — Communicate to Customer",
-      "customerName": "Alex",
-      "script": "\"Alex, I've looked into your loan application. It's currently in our underwriting review stage, and the delay is due to an additional income verification step required for your loan amount — this is a standard part of the process, not a rejection.\n\nI've just sent a document request to your email. Once we receive your updated income documents, our team will aim to complete the review within 3 to 5 business days.\n\nIs there anything else I can help clarify for you today?\"",
-      "caseRef": "LOAN-2024-00892",
+      "customerName": "{{default_first_name}}",
+      "script": "\"{{default_first_name}}, I've looked into your loan application. It's currently in our underwriting review stage, and the delay is due to an additional income verification step required for your loan amount — this is a standard part of the process, not a rejection.\n\nI've just sent a document request to your email. Once we receive your updated income documents, our team will aim to complete the review within 3 to 5 business days.\n\nIs there anything else I can help clarify for you today?\"",
+      "caseRef": "{{default_case_ref}}",
       "caseStatus": "Open – Awaiting Documents",
       "resolution": "Document request issued. 5-day deadline set. Customer informed of expected timeline."
     }
   ],
   "personas": {
     "demanding": {
-      "customerName": "Avery Collins"
+      "customerName": "{{customer_name}}"
     }
   }
 }

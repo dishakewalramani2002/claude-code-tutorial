@@ -1,3 +1,43 @@
+PORTAL_DATA
+
+{
+  "customer_name": "George Pan",
+  "first_name": "George",
+  "phone": "(628) 555-0198",
+  "order_id": "59214",
+  "amount": "$349.99",
+  "date": "2026-03-25",
+  "product": "BaristaPro 350 Espresso Machine",
+  "merchant": "Home Appliances Direct",
+  "status": "FAILED – Pending Refund",
+  "failure_code": "DEFECTIVE_PRODUCT",
+  "merchant_response": "Return request acknowledged",
+  "days_since": "7 days",
+  "refund_eligibility": "ELIGIBLE – Defective Item Return",
+  "estimated_return": "3–5 business days",
+
+  "default_customer_name": "Morgan Riley",
+  "default_first_name": "Morgan",
+  "default_transaction_id": "TXN-2024-05521",
+  "default_amount": "$340.00",
+  "default_date": "2026-03-25",
+  "default_date_display": "March 25th",
+  "default_date_short": "03/25",
+  "default_merchant": "Unknown Merchant",
+  "default_phone": "(628) 555-0134",
+  "default_status": "FAILED – Pending Reversal",
+  "default_payment_type": "Debit Card Payment",
+  "default_processor_ref": "PRO-88214",
+  "default_failure_code": "GATEWAY_TIMEOUT",
+  "default_merchant_response": "Transaction not received",
+  "default_days_since": "3 days",
+  "default_refund_eligibility": "ELIGIBLE – Automatic Reversal",
+  "default_estimated_return": "1–3 business days",
+  "default_case_ref": "REFUND-2024-05521"
+}
+
+---
+
 # CUSTOMER PERSONA
 
 ## 1. Identity Layer
