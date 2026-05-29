@@ -8,7 +8,7 @@ export default function FlightLookup({ onAdvance, workflowData, updateData, work
   const { customer, screens } = workflow;
   const searchKeys = screens.lookup.searchKeys || [];
 
-  const query = workflowData.loanSearch;
+  const query = workflowData.searchQuery;
   const found = workflowData.applicationStatus;
   const notFound = workflowData.searchNotFound;
 
@@ -28,7 +28,12 @@ export default function FlightLookup({ onAdvance, workflowData, updateData, work
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={screens.lookup.searchPlaceholder}
           value={query}
-          onChange={e => { setSearched(false); updateData("loanSearch", e.target.value); }}
+          onChange={e => {
+            setSearched(false);
+            updateData("searchQuery", e.target.value);
+            updateData("searchNotFound", false);
+            updateData("applicationStatus", false);
+          }}
           onKeyDown={e => e.key === "Enter" && handleSearch()}
         />
         <ActionButton label={screens.lookup.searchButtonLabel} variant="primary" onClick={handleSearch} />

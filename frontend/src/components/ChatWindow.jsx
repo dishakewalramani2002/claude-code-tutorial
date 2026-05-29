@@ -28,7 +28,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
   const [error, setError] = useState(null);
   const [portalHeight, setPortalHeight] = useState(280);
   const [workflowData, setWorkflowData] = useState({
-    loanSearch: "",
+    searchQuery: "",
     applicationStatus: false,
     searchNotFound: false,
     delayReason: "",
@@ -381,7 +381,7 @@ export default function ChatWindow({ sessionConfig, token, navProps, onEndSessio
               onReset={() => {
                 setPortalStep(0);
                 setPortalCompleted([]);
-                setWorkflowData({ loanSearch: "", applicationStatus: false, searchNotFound: false, delayReason: "", resolution: "", caseNote: "" });
+                setWorkflowData({ searchQuery: "", applicationStatus: false, searchNotFound: false, delayReason: "", resolution: "", caseNote: "" });
               }}
               onGoToStep={goToStep}
               workflowData={workflowData}
