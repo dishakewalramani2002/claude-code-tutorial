@@ -43,10 +43,11 @@
       "title": "Transaction Search",
       "placeholder": "Enter transaction ID or order ID...",
       "searchLabel": "Search",
+      "searchKeys": ["{{transaction_id}}", "{{order_id}}"],
       "wrongButtons": ["File Dispute Claim", "Block Card"],
       "customer": {
         "name": "{{customer_name}}",
-        "transactionId": "{{default_transaction_id}}",
+        "transactionId": "{{transaction_id}}",
         "amount": "{{default_amount}}",
         "date": "{{default_date}}",
         "merchant": "{{default_merchant}}",
@@ -93,7 +94,7 @@
       "title": "Process Refund",
       "summary": [
         ["Customer", "{{customer_name}}"],
-        ["Transaction ID", "{{default_transaction_id}}"],
+        ["Transaction ID", "{{transaction_id}}"],
         ["Refund Amount", "{{default_amount}}"],
         ["Method", "Automatic Reversal + Provisional Credit"],
         ["Provisional Credit", "Applied today"],
@@ -107,7 +108,7 @@
       "title": "Case Resolved — Communicate to Customer",
       "customerName": "{{first_name}}",
       "script": "\"{{first_name}}, I've reviewed your account and confirmed that the {{default_amount}} transaction on {{default_date_display}} failed on our end — the failure code shows a gateway timeout, which means the merchant never actually received the funds.\n\nI've initiated an automatic reversal, which will return the {{default_amount}} to your account within 1 to 3 business days. I've also applied a provisional credit of {{default_amount}} to your account effective today so you have access to those funds right away.\n\nIs there anything else I can help you with?\"",
-      "caseRef": "{{default_case_ref}}",
+      "caseRef": "{{case_ref}}",
       "caseStatus": "Closed",
       "resolution": "Automatic reversal initiated. Provisional credit of {{default_amount}} applied. Customer informed."
     }

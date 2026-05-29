@@ -59,6 +59,7 @@
     "lookup": {
       "searchPlaceholder": "Enter booking reference or last name...",
       "searchButtonLabel": "Search",
+      "searchKeys": ["{{booking}}", "{{customer_name}}"],
       "wrongButtons": ["Upgrade Seat", "New Booking", "Lost Baggage Claim"],
       "advanceLabel": "View Disrupted Flight →",
       "foundWrongButtons": ["View MileagePlus Account"]

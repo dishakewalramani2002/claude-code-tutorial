@@ -5,8 +5,18 @@ import WrongAction from "../WrongAction";
 export default function BaggageLookup({ onAdvance, workflowData, updateData, workflow }) {
   const [wrong, setWrong] = useState(false);
   const { customer, screens } = workflow;
+  const searchKeys = screens.lookup.searchKeys || [];
+
   const query = workflowData.loanSearch;
   const found = workflowData.applicationStatus;
+  const notFound = workflowData.searchNotFound;
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
+    updateData("applicationStatus", match);
+    updateData("searchNotFound", !match);
+  };
 
   return (
     <div className="space-y-4">
@@ -17,13 +27,9 @@ export default function BaggageLookup({ onAdvance, workflowData, updateData, wor
           placeholder={screens.lookup.searchPlaceholder}
           value={query}
           onChange={e => updateData("loanSearch", e.target.value)}
-          onKeyDown={e => e.key === "Enter" && query.trim() && updateData("applicationStatus", true)}
+          onKeyDown={e => e.key === "Enter" && handleSearch()}
         />
-        <ActionButton
-          label={screens.lookup.searchButtonLabel}
-          variant="primary"
-          onClick={() => query.trim() && updateData("applicationStatus", true)}
-        />
+        <ActionButton label={screens.lookup.searchButtonLabel} variant="primary" onClick={handleSearch} />
       </div>
       <div className="flex gap-2">
         {screens.lookup.wrongButtons.map(label => (
@@ -31,6 +37,11 @@ export default function BaggageLookup({ onAdvance, workflowData, updateData, wor
         ))}
       </div>
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
+      {notFound && !found && (
+        <div className="border border-red-200 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          No record found for <strong>{query}</strong>. Check the PIR reference or bag tag number and try again.
+        </div>
+      )}
       {found && (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">

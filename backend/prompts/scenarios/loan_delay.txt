@@ -3,8 +3,9 @@ PORTAL_DATA
 {
   "customer_name": "Avery Collins",
   "first_name": "Avery",
+  "loan_id": "LC-78421",
+  "case_ref": "LOAN-LC-78421",
 
-  "default_loan_id": "LN-2024-00892",
   "default_loan_type": "Personal Loan",
   "default_amount": "$15,000",
   "default_applied_date": "2026-03-10",
@@ -17,8 +18,7 @@ PORTAL_DATA
   "default_assigned_to": "Underwriting Team B",
   "default_next_step": "Income documents resubmission",
   "default_delay_action": "Request Documents",
-  "default_summary_status": "Awaiting income verification resubmission",
-  "default_case_ref": "LOAN-2024-00892"
+  "default_summary_status": "Awaiting income verification resubmission"
 }
 
 ---

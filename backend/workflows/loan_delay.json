@@ -43,10 +43,11 @@
       "title": "Loan Application Search",
       "placeholder": "Enter loan ID or customer ID...",
       "searchLabel": "Search",
+      "searchKeys": ["{{loan_id}}"],
       "wrongButtons": ["New Loan Application", "Close Application"],
       "customer": {
         "name": "{{customer_name}}",
-        "loanId": "{{default_loan_id}}",
+        "loanId": "{{loan_id}}",
         "type": "{{default_loan_type}}",
         "amount": "{{default_amount}}",
         "appliedDate": "{{default_applied_date}}",
@@ -93,7 +94,7 @@
       "title": "Apply Actions",
       "summary": [
         ["Customer", "{{customer_name}}"],
-        ["Loan ID", "{{default_loan_id}}"],
+        ["Loan ID", "{{loan_id}}"],
         ["Action", "Document Request Issued"],
         ["Deadline", "5 business days from today"],
         ["Status", "{{default_summary_status}}"],
@@ -107,7 +108,7 @@
       "title": "Case Updated — Communicate to Customer",
       "customerName": "{{first_name}}",
       "script": "\"{{first_name}}, I've looked into your loan application. It's currently in our underwriting review stage, and the delay is due to an additional income verification step required for your loan amount — this is a standard part of the process, not a rejection.\n\nI've just sent a document request to your email. Once we receive your updated income documents, our team will aim to complete the review within 3 to 5 business days.\n\nIs there anything else I can help clarify for you today?\"",
-      "caseRef": "{{default_case_ref}}",
+      "caseRef": "{{case_ref}}",
       "caseStatus": "Open – Awaiting Documents",
       "resolution": "Document request issued. 5-day deadline set. Customer informed of expected timeline."
     }

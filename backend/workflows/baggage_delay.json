@@ -62,6 +62,7 @@
     "lookup": {
       "searchPlaceholder": "Enter PIR reference or bag tag number...",
       "searchButtonLabel": "Search",
+      "searchKeys": ["{{pir_ref}}", "{{bag_tag}}"],
       "wrongButtons": ["New Booking", "File New Damage Claim", "Upgrade Seat"],
       "advanceLabel": "Open Baggage Claim →",
       "foundWrongButtons": ["View Booking Details", "Issue Flight Voucher"]
