@@ -12,9 +12,16 @@ export default function LoanLookup({ workflow, onAdvance, workflowData, updateDa
   const found = workflowData.applicationStatus;
   const notFound = workflowData.searchNotFound;
 
+  // DEBUG — remove after diagnosis
+  console.log("[LoanLookup render] FOUND BEFORE:", workflowData.applicationStatus, "| SEARCH KEYS:", searchKeys);
+
   const handleSearch = () => {
     if (!query.trim()) return;
     const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
+    console.log("[LoanLookup search] QUERY:", query);
+    console.log("[LoanLookup search] SEARCH KEYS:", searchKeys);
+    console.log("[LoanLookup search] MATCH:", match);
+    console.log("[LoanLookup search] FOUND BEFORE:", workflowData.applicationStatus);
     updateData("applicationStatus", match);
     updateData("searchNotFound", !match);
   };
