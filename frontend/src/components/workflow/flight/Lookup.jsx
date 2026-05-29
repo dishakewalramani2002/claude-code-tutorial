@@ -4,6 +4,7 @@ import WrongAction from "../WrongAction";
 
 export default function FlightLookup({ onAdvance, workflowData, updateData, workflow }) {
   const [wrong, setWrong] = useState(false);
+  const [searched, setSearched] = useState(false);
   const { customer, screens } = workflow;
   const searchKeys = screens.lookup.searchKeys || [];
 
@@ -13,6 +14,7 @@ export default function FlightLookup({ onAdvance, workflowData, updateData, work
 
   const handleSearch = () => {
     if (!query.trim()) return;
+    setSearched(true);
     const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
     updateData("applicationStatus", match);
     updateData("searchNotFound", !match);
@@ -26,7 +28,7 @@ export default function FlightLookup({ onAdvance, workflowData, updateData, work
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={screens.lookup.searchPlaceholder}
           value={query}
-          onChange={e => updateData("loanSearch", e.target.value)}
+          onChange={e => { setSearched(false); updateData("loanSearch", e.target.value); }}
           onKeyDown={e => e.key === "Enter" && handleSearch()}
         />
         <ActionButton label={screens.lookup.searchButtonLabel} variant="primary" onClick={handleSearch} />
@@ -37,7 +39,7 @@ export default function FlightLookup({ onAdvance, workflowData, updateData, work
         ))}
       </div>
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
-      {notFound && !found && (
+      {searched && notFound && !found && (
         <div className="border border-red-200 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
           No record found for <strong>{query}</strong>. Check the booking reference and try again.
         </div>

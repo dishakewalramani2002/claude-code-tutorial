@@ -4,6 +4,7 @@ import WrongAction from "../WrongAction";
 
 export default function LoanLookup({ workflow, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
+  const [searched, setSearched] = useState(false);
   const cfg = workflow.screenConfigs[0];
   const customer = cfg.customer;
   const searchKeys = cfg.searchKeys || [];
@@ -12,16 +13,10 @@ export default function LoanLookup({ workflow, onAdvance, workflowData, updateDa
   const found = workflowData.applicationStatus;
   const notFound = workflowData.searchNotFound;
 
-  // DEBUG — remove after diagnosis
-  console.log("[LoanLookup render] FOUND BEFORE:", workflowData.applicationStatus, "| SEARCH KEYS:", searchKeys);
-
   const handleSearch = () => {
     if (!query.trim()) return;
+    setSearched(true);
     const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
-    console.log("[LoanLookup search] QUERY:", query);
-    console.log("[LoanLookup search] SEARCH KEYS:", searchKeys);
-    console.log("[LoanLookup search] MATCH:", match);
-    console.log("[LoanLookup search] FOUND BEFORE:", workflowData.applicationStatus);
     updateData("applicationStatus", match);
     updateData("searchNotFound", !match);
   };
@@ -34,7 +29,7 @@ export default function LoanLookup({ workflow, onAdvance, workflowData, updateDa
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={cfg.placeholder}
           value={query}
-          onChange={e => updateData("loanSearch", e.target.value)}
+          onChange={e => { setSearched(false); updateData("loanSearch", e.target.value); }}
           onKeyDown={e => e.key === "Enter" && handleSearch()}
         />
         <ActionButton label={cfg.searchLabel} variant="primary" onClick={handleSearch} />
@@ -45,7 +40,7 @@ export default function LoanLookup({ workflow, onAdvance, workflowData, updateDa
         ))}
       </div>
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
-      {notFound && !found && (
+      {searched && notFound && !found && (
         <div className="border border-red-200 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
           No record found for <strong>{query}</strong>. Check the loan ID and try again.
         </div>
