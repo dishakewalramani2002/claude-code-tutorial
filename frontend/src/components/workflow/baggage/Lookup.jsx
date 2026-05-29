@@ -5,6 +5,7 @@ import WrongAction from "../WrongAction";
 export default function BaggageLookup({ onAdvance, workflowData, updateData, workflow }) {
   const [wrong, setWrong] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [searchedQuery, setSearchedQuery] = useState("");
   const { customer, screens } = workflow;
   const searchKeys = screens.lookup.searchKeys || [];
 
@@ -15,6 +16,7 @@ export default function BaggageLookup({ onAdvance, workflowData, updateData, wor
   const handleSearch = () => {
     if (!query.trim()) return;
     setSearched(true);
+    setSearchedQuery(query);
     const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
     updateData("applicationStatus", match);
     updateData("searchNotFound", !match);
@@ -46,7 +48,7 @@ export default function BaggageLookup({ onAdvance, workflowData, updateData, wor
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
       {searched && notFound && !found && (
         <div className="border border-red-200 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          No record found for <strong>{query}</strong>. Check the PIR reference or bag tag number and try again.
+          No record found for <strong>{searchedQuery}</strong>. Check the PIR reference or bag tag number and try again.
         </div>
       )}
       {found && (

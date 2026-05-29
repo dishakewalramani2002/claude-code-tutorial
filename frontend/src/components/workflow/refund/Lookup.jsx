@@ -5,6 +5,7 @@ import WrongAction from "../WrongAction";
 export default function RefundLookup({ workflow, persona, onAdvance, workflowData, updateData }) {
   const [wrong, setWrong] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [searchedQuery, setSearchedQuery] = useState("");
   const cfg = workflow.screenConfigs[0];
   const searchKeys = cfg.searchKeys || [];
 
@@ -28,6 +29,7 @@ export default function RefundLookup({ workflow, persona, onAdvance, workflowDat
   const handleSearch = () => {
     if (!query.trim()) return;
     setSearched(true);
+    setSearchedQuery(query);
     const match = searchKeys.some(k => k.trim().toUpperCase() === query.trim().toUpperCase());
     updateData("applicationStatus", match);
     updateData("searchNotFound", !match);
@@ -59,7 +61,7 @@ export default function RefundLookup({ workflow, persona, onAdvance, workflowDat
       {wrong && <WrongAction onDismiss={() => setWrong(false)} />}
       {searched && notFound && !found && (
         <div className="border border-red-200 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          No record found for <strong>{query}</strong>. Check the transaction ID and try again.
+          No record found for <strong>{searchedQuery}</strong>. Check the transaction ID and try again.
         </div>
       )}
       {found && (
