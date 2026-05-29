@@ -3,6 +3,7 @@ PORTAL_DATA
 {
   "customer_name": "Jordan Blake",
   "first_name": "Jordan",
+  "last_name": "Blake",
   "booking": "UA-8821",
   "tier": "Silver MileagePlus",
   "phone": "(213) 555-0047",
