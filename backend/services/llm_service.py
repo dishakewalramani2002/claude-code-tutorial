@@ -2,6 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from config import build_client, MODEL_NAME
+from llm_settings import CUSTOMER_SETTINGS, FEEDBACK_SETTINGS, REPORT_SETTINGS
 
 # --- Client Setup ---
 
@@ -186,8 +187,7 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            max_tokens=512,
-            temperature=0.7,
+            **CUSTOMER_SETTINGS,
             timeout=LLM_TIMEOUT,
         )
     except Exception as e:
@@ -231,8 +231,7 @@ Do NOT reference, draw from, or compare against any other CSR turn in the conver
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            max_tokens=1024,
-            temperature=0.7,
+            **FEEDBACK_SETTINGS,
             response_format={"type": "json_object"},
             timeout=LLM_TIMEOUT,
         )
@@ -304,8 +303,7 @@ def stream_llm_response(scenario: str, persona: str, message: str, history: list
         stream = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            max_tokens=512,
-            temperature=0.7,
+            **CUSTOMER_SETTINGS,
             stream=True,
             timeout=LLM_TIMEOUT,
         )
@@ -391,7 +389,7 @@ def generate_report(history: list[dict]) -> dict:
                 {"role": "user", "content": json.dumps(session_summary)},
             ],
             response_format={"type": "json_object"},
-            temperature=0.3,
+            **REPORT_SETTINGS,
             timeout=LLM_TIMEOUT,
         )
         raw = response.choices[0].message.content.strip()
