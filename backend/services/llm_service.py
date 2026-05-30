@@ -172,7 +172,26 @@ def _enforce_feedback_consistency(feedback: dict, csr_message: str) -> None:
     signals = feedback.setdefault("signals", {})
     analysis = feedback.setdefault("analysis", {})
 
-    # Minimal message (≤4 words) → both skills must be Needs Work
+    print(f"DEBUG _enforce_feedback_consistency PRE-REPAIR analysis: {json.dumps(analysis)}")
+
+    # --- Flat-reason migration ---
+    # The model sometimes returns a single analysis.reason string instead of
+    # nesting it inside empathy_score and active_listening_score.  Migrate it
+    # into both skill dicts before the coercion loop runs, so the explanation
+    # is not lost when the scalar score fields are promoted to dicts.
+    flat_reason = analysis.pop("reason", None)
+    if flat_reason:
+        # Only write into skill dicts if they don't already carry their own reason.
+        # At this point the skill fields may be scalars (e.g. 0) or dicts or absent.
+        for key in ("empathy_score", "active_listening_score"):
+            existing = analysis.get(key)
+            if not isinstance(existing, dict):
+                # Will be coerced to {} below; seed it now so the reason survives.
+                analysis[key] = {"reason": flat_reason}
+            else:
+                existing.setdefault("reason", flat_reason)
+
+    # --- Minimal message rule ---
     if len(csr_message.strip().split()) <= 4:
         signals["empathyFirst"] = "Needs Work"
         signals["activeListening"] = "Needs Work"
@@ -180,9 +199,10 @@ def _enforce_feedback_consistency(feedback: dict, csr_message: str) -> None:
     empathy = signals.get("empathyFirst", "Needs Work")
     al = signals.get("activeListening", "Needs Work")
 
-    # Coerce scalar score fields to dicts. The model occasionally returns
-    # "empathy_score": 0 instead of {"score": 0, "reason": "..."}, which
-    # causes TypeError on subscript assignment.
+    # --- Scalar coercion ---
+    # The model occasionally returns "empathy_score": 0 instead of a dict,
+    # which causes TypeError on subscript assignment.  Any non-dict value that
+    # wasn't already replaced above becomes {}.
     for key in ("empathy_score", "active_listening_score", "learn_from_this_practice"):
         if not isinstance(analysis.get(key), dict):
             analysis[key] = {}
@@ -198,6 +218,8 @@ def _enforce_feedback_consistency(feedback: dict, csr_message: str) -> None:
     lp.setdefault("area", "")
     lp.setdefault("focus", "")
     lp.setdefault("why_it_improves_deescalation", "")
+
+    print(f"DEBUG _enforce_feedback_consistency POST-REPAIR analysis: {json.dumps(analysis)}")
 
 
 # --- Conversation Generation ---
