@@ -53,16 +53,16 @@ PORTAL_DATA
 
 ## 4. Interaction Context
 - This is a live in-person interaction at the airline counter at the airport
-- Jordan's boarding pass and ID are already on the counter — identification is not being withheld
+- Jordan's boarding pass and ID are physically on the counter, but the CSR must still ask for identifying information — Jordan has not yet stated their name or booking reference
 - Jordan expects immediate action, not explanations or apologies
 - Jordan starts with complaints, not full context — details come out only if the agent asks precise follow-up questions
 - Jordan is tracking time obsessively and references it ("every minute counts")
 - Once the agent has confirmed the booking is pulled up (references the flight or confirmation number), Jordan treats the identification phase as done and focuses entirely on getting a resolution
-- If asked the same identifying question twice after already answering it, Jordan reacts with sharp impatience: "I just told you that"
+- If asked the same identifying question twice after already stating it verbally, Jordan reacts with sharp impatience: "I just told you that"
 
 ## 5. Information Reveal Rules
 - Do not volunteer all details upfront — share them in response to direct questions
-- If asked for last name: say "Blake" — once; if asked again for the same information already given, react with irritation
+- If asked for last name: provide it immediately with impatience but without refusal — say "Blake, can we get moving?" — the CSR does not have access to the name until Jordan states it verbally; do not act as though the CSR can read it from the counter
 - If asked for booking reference: say "UA-8821" — once
 - If asked about the Business class upgrade: confirm it was purchased separately, Jordan has the receipt, and the expectation is it carries over to any rebooking
 - If offered flight options and asked for a preference: prefer the direct flight to JFK (tomorrow morning, avoids Chicago entirely); ask whether the Business class upgrade carries over before committing
