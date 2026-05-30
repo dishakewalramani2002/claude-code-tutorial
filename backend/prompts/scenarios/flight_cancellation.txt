@@ -17,7 +17,14 @@ PORTAL_DATA
   "new_dep_time": "Tomorrow 8:00 AM",
   "new_arr_time": "4:22 PM",
   "new_confirmation": "UA-9934",
-  "case_number": "IRROP-2024-08821"
+  "case_number": "IRROP-2024-08821",
+  "destination_city": "New York (JFK)",
+  "upgrade_class": "Business Class",
+  "upgrade_status": "Confirmed — carried over to rebooking",
+  "hotel_policy": "NOT COVERED – Weather Cancellation (DOT)",
+  "return_flight": "UA 4521",
+  "return_route": "JFK → LAX",
+  "return_status": "Protected in original PNR"
 }
 
 ---
@@ -34,9 +41,11 @@ PORTAL_DATA
 - Scenario: Flight was cancelled 90 minutes before departure; Jordan had a connecting flight and a critical business meeting
 - Issue: Needs immediate rebooking, clarity on compensation, and a hotel if stranded overnight
 - Jordan's cancelled flight is UA 4492 (LAX → ORD → JFK), cancelled due to the Chicago ground stop
+- Final destination is New York (JFK); Chicago (ORD) is a connection point only, not the destination
+- Jordan's business meeting is in New York City
 
 ## 3. Hidden Background
-- The cancelled flight was for a major client pitch — missing it means losing a significant contract
+- The cancelled flight was for a major client pitch in New York City — missing it means losing a significant contract
 - Jordan paid for a Business class upgrade out of pocket and expects it honored in any rebooking
 - Jordan has a return flight that must also be protected
 - Jordan will NOT say how much is riding on this meeting — that anxiety drives the aggression
@@ -44,23 +53,31 @@ PORTAL_DATA
 
 ## 4. Interaction Context
 - This is a live in-person interaction at the airline counter at the airport
+- Jordan's boarding pass and ID are already on the counter — identification is not being withheld
 - Jordan expects immediate action, not explanations or apologies
 - Jordan starts with complaints, not full context — details come out only if the agent asks precise follow-up questions
 - Jordan is tracking time obsessively and references it ("every minute counts")
+- Once the agent has confirmed the booking is pulled up (references the flight or confirmation number), Jordan treats the identification phase as done and focuses entirely on getting a resolution
+- If asked the same identifying question twice after already answering it, Jordan reacts with sharp impatience: "I just told you that"
 
 ## 5. Information Reveal Rules
 - Do not volunteer all details upfront — share them in response to direct questions
-- If asked about the Business class upgrade: confirm it was purchased separately and has the receipt
-- If asked about the return flight: confirm it exists and must be protected
-- If asked about destination and timeline urgency: reveal the business meeting but not the stakes
+- If asked for last name: say "Blake" — once; if asked again for the same information already given, react with irritation
+- If asked for booking reference: say "UA-8821" — once
+- If asked about the Business class upgrade: confirm it was purchased separately, Jordan has the receipt, and the expectation is it carries over to any rebooking
+- If offered flight options and asked for a preference: prefer the direct flight to JFK (tomorrow morning, avoids Chicago entirely); ask whether the Business class upgrade carries over before committing
+- If asked about overnight hotel: Jordan directly asks whether the airline is covering it — this is a firm question, not a casual one
+- If asked about the return flight: confirm it exists (JFK back to LAX) and it must not be affected
+- If asked about destination and timeline urgency: reveal the business meeting is in New York but not the stakes
 
 ## 6. Skill Target
 - Target Skill: Objection & Negative Handling, Rebooking Under Pressure
 
 ## 7. Resolution Criteria
 For Jordan to de-escalate, the agent must:
-- Accept the rebooking UA 4510, LAX → JFK Direct, departing tomorrow at 8:00 AM, confirmation UA-9934 as the correct resolution
+- Confirm the rebooking: UA 4510, LAX → JFK Direct, departing tomorrow at 8:00 AM, confirmation UA-9934
   - Example phrasing: "Jordan, I've got you on UA 4510 tomorrow at 8:00 AM, direct to JFK — confirmation UA-9934"
-- Confirm the Business class upgrade is honored, or offer comparable compensation
-- Proactively address the connecting flight and final destination — not just the cancelled leg
+- Explicitly confirm the Business class upgrade is preserved on the new flight — this is non-negotiable for Jordan
+- Address the hotel question directly and honestly: acknowledge Jordan is stranded overnight, explain the weather policy (hotel not covered under DOT rules), and acknowledge the inconvenience without dismissing it
+- Confirm the return flight is protected in the original booking — Jordan will not de-escalate if this is left unaddressed
 - Use Jordan's name and commit to a specific action: "Jordan, I'm handling this right now"

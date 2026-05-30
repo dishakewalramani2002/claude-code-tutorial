@@ -16,7 +16,7 @@
     { "id": "F2", "flight": "UA 4495", "route": "LAX → ORD → JFK", "dep": "Today 6:00 PM", "arr": "Tomorrow 12:15 AM", "seats": "Available", "type": "connecting" },
     { "id": "F3", "flight": "AA 2341 (Partner)", "route": "LAX → JFK (Direct)", "dep": "Today 4:00 PM", "arr": "Today 11:55 PM", "seats": "3 Left", "type": "partner" }
   ],
-  "policy": "IRREGULAR OPERATIONS POLICY – Flight Cancellations\n\nCancellation Reason: WEATHER (Uncontrollable)\n\nRebooking Rights\n  • Passenger entitled to rebooking on next available United flight\n  • Partner airline rebooking requires Supervisor approval\n  • Seat class: Rebook in same class or higher at no charge\n\nCompensation – Weather Cancellation (DOT Rules)\n  ┌──────────────────────────────────────────────┐\n  │  Cash/Miles Compensation:    NOT REQUIRED    │\n  │  Hotel Voucher:              NOT REQUIRED    │\n  │  Meal Voucher ($15):         ELIGIBLE ✓      │\n  │    (Applies: delay > 3 hrs from orig. dep.)  │\n  └──────────────────────────────────────────────┘\n\nNote: Cash refund is required ONLY if passenger chooses not\nto rebook. Full refund must be processed within 7 business days.",
+  "policy": "IRREGULAR OPERATIONS POLICY – Flight Cancellations\n\nCancellation Reason: WEATHER (Uncontrollable)\n\nRebooking Rights\n  • Passenger entitled to rebooking on next available United flight\n  • Partner airline rebooking requires Supervisor approval\n  • Seat class: Rebook in same class or higher at no charge\n  • Paid upgrades (Business/First): Carry over to replacement flight automatically\n\nCompensation – Weather Cancellation (DOT Rules)\n  ┌──────────────────────────────────────────────┐\n  │  Cash/Miles Compensation:    NOT REQUIRED    │\n  │  Hotel Voucher:              NOT REQUIRED    │\n  │  Meal Voucher ($15):         ELIGIBLE ✓      │\n  │    (Applies: delay > 3 hrs from orig. dep.)  │\n  └──────────────────────────────────────────────┘\n\nOvernight Stranding — Agent Guidance\n  • Hotel is NOT covered under DOT weather rules — communicate clearly and with empathy\n  • Do not imply hotel coverage where none exists\n  • Offer: $15 meal voucher + United Club access (Silver MileagePlus eligible)\n\nReturn Flight Protection\n  • Return itinerary in same PNR is automatically protected — verify and confirm to passenger\n\nNote: Cash refund is required ONLY if passenger chooses not\nto rebook. Full refund must be processed within 7 business days.",
   "steps": [
     {
       "id": "lookup",
@@ -81,15 +81,18 @@
       "confirmData": [
         ["New Flight", "{{new_flight}} — {{new_route}}"],
         ["New Departure", "{{new_dep_time}}"],
+        ["New Arrival", "{{new_arr_time}}"],
         ["New Confirmation", "{{new_confirmation}}"],
+        ["Seat Class", "{{upgrade_class}} — {{upgrade_status}}"],
+        ["Return Flight", "{{return_flight}} ({{return_route}}) — {{return_status}}"],
         ["Compensation", "$15 Meal Voucher — Issued to email"],
-        ["Hotel", "Not Applicable (Weather)"]
+        ["Hotel", "{{hotel_policy}}"]
       ],
-      "wrongButtons": ["Upgrade to Business Class", "Issue Hotel Voucher"]
+      "wrongButtons": ["Rebook in Economy — No Upgrade Carry-Over", "Issue Hotel Voucher"]
     },
     "communicate": {
       "customerName": "{{first_name}}",
-      "script": "{{first_name}}, I've taken care of everything for you. I've rebooked you on {{new_flight}}, a direct flight from LAX to JFK departing {{new_dep_time}}, arriving at {{new_arr_time}}. Your new confirmation number is {{new_confirmation}}.\n\nI've also issued a $15 meal voucher to your email on file, which you can use in any airport restaurant today. I do want to be upfront — because this cancellation was due to a weather ground stop in Chicago, we're not able to offer additional cash compensation under DOT guidelines, but we're doing everything we can to get you to your destination as quickly as possible.\n\nIs there anything else I can help you with today?",
+      "script": "{{first_name}}, here's what I have for you. I've rebooked you on {{new_flight}} — direct LAX to JFK, departing {{new_dep_time}} tomorrow and arriving {{new_arr_time}}. Your confirmation is {{new_confirmation}}. Your {{upgrade_class}} seat carries over to this flight at no additional charge.\n\nOn the hotel — I want to be straight with you. Because this cancellation is due to a weather ground stop in Chicago, it falls under DOT rules that do not require us to cover hotel accommodations for weather events. I know that's not what you wanted to hear, and I'm sorry you're in this position. What I can offer tonight is a $15 meal voucher for any terminal restaurant — I'm sending that to your email now — and as a Silver MileagePlus member you have access to the United Club lounge.\n\nYour return flight is also protected in your original booking record — no action needed on that end.\n\nIs there anything else you need before I close this out?",
       "caseNumber": "{{case_number}}",
       "caseStatus": "Closed",
       "resolution": "Rebooked {{new_confirmation}} + $15 meal voucher issued."
