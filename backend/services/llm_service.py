@@ -335,7 +335,12 @@ Do NOT reference, draw from, or compare against any other CSR turn in the conver
             raise ValueError("ANALYSIS MISSING — SHOULD NEVER HAPPEN")
 
         if training and isinstance(feedback, dict):
+            raw_feedback_before = json.dumps(parsed.get("feedback", {}), indent=2)
             _enforce_feedback_consistency(feedback, message)
+            print("DEBUG PRE-ENFORCE feedback:")
+            print(raw_feedback_before)
+            print("DEBUG FINAL FEEDBACK:")
+            print(json.dumps(feedback, indent=2))
 
         if DEBUG_PROMPTS:
             print("=== FINAL FEEDBACK ===")
