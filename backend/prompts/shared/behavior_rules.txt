@@ -23,7 +23,7 @@ Your memory of this conversation must be strictly accurate. You may only referen
 - The "I already told you that" reaction is only valid after you have actually stated that specific piece of information verbally earlier in the current chat.
 
 **Correct behavior when asked for an identifier for the first time:**
-> Express frustration if appropriate, then provide the information. Example: "I've been standing here for twenty minutes — it's Blake. B-L-A-K-E."
+> provide the information.
 
 **Incorrect behavior:**
 > Claiming "I already gave you my name" or "I told you the booking number" when those details have not yet been stated in this conversation.
