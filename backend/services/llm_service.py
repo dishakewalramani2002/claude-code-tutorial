@@ -317,6 +317,7 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
     l1_input = "\n".join(l1_parts)
 
     l1_system = load_evaluation_prompt("layer1_stage_identifier")
+    t_l1 = time.perf_counter()
     l1_resp = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "system", "content": l1_system}, {"role": "user", "content": l1_input}],
@@ -324,7 +325,14 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
         response_format={"type": "json_object"},
         timeout=LLM_TIMEOUT,
     )
-    l1_output = json.loads(l1_resp.choices[0].message.content)
+    t_l1_end = time.perf_counter()
+    l1_raw = l1_resp.choices[0].message.content
+    l1_output = json.loads(l1_raw)
+    _log_latency("layer1", {
+        "input_chars": len(l1_system) + len(l1_input),
+        "output_chars": len(l1_raw),
+        "time": f"{t_l1_end - t_l1:.2f}s",
+    })
 
     if DEBUG_PROMPTS:
         print("=== LAYER 1 OUTPUT ===")
@@ -332,6 +340,7 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
 
     l2_input = l1_input + f"\n\nLayer 1 output:\n{json.dumps(l1_output, indent=2)}"
     l2_system = load_evaluation_prompt("layer2_skill_evaluator")
+    t_l2 = time.perf_counter()
     l2_resp = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "system", "content": l2_system}, {"role": "user", "content": l2_input}],
@@ -339,7 +348,14 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
         response_format={"type": "json_object"},
         timeout=LLM_TIMEOUT,
     )
-    l2_output = json.loads(l2_resp.choices[0].message.content)
+    t_l2_end = time.perf_counter()
+    l2_raw = l2_resp.choices[0].message.content
+    l2_output = json.loads(l2_raw)
+    _log_latency("layer2", {
+        "input_chars": len(l2_system) + len(l2_input),
+        "output_chars": len(l2_raw),
+        "time": f"{t_l2_end - t_l2:.2f}s",
+    })
 
     if DEBUG_PROMPTS:
         print("=== LAYER 2 OUTPUT ===")
@@ -347,6 +363,7 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
 
     l3_input = l2_input + f"\n\nLayer 2 output:\n{json.dumps(l2_output, indent=2)}"
     l3_system = load_evaluation_prompt("layer3_feedback_generator")
+    t_l3 = time.perf_counter()
     l3_resp = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "system", "content": l3_system}, {"role": "user", "content": l3_input}],
@@ -354,7 +371,14 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
         response_format={"type": "json_object"},
         timeout=LLM_TIMEOUT,
     )
-    l3_output = json.loads(l3_resp.choices[0].message.content)
+    t_l3_end = time.perf_counter()
+    l3_raw = l3_resp.choices[0].message.content
+    l3_output = json.loads(l3_raw)
+    _log_latency("layer3", {
+        "input_chars": len(l3_system) + len(l3_input),
+        "output_chars": len(l3_raw),
+        "time": f"{t_l3_end - t_l3:.2f}s",
+    })
 
     if DEBUG_PROMPTS:
         print("=== LAYER 3 OUTPUT ===")
@@ -387,7 +411,6 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
 
     messages = build_messages(history, system_prompt, message)
 
-    system_prompt_chars = len(system_prompt)
     payload_chars = sum(len(m["content"]) for m in messages)
 
     t_llm_start = time.perf_counter()
@@ -405,26 +428,20 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
     t_llm_end = time.perf_counter()
 
     raw_text = response.choices[0].message.content.strip()
+    _log_latency("customer_response", {
+        "input_chars": payload_chars,
+        "output_chars": len(raw_text),
+        "time": f"{t_llm_end - t_llm_start:.2f}s",
+    })
+
     try:
         parsed = json.loads(raw_text)
         customer_response = parsed.get("customer_response", raw_text)
     except (json.JSONDecodeError, AttributeError):
         customer_response = raw_text
 
-    _latency_fields = {
-        "model": MODEL_NAME,
-        "scenario": scenario,
-        "persona": persona,
-        "training": str(training).lower(),
-        "messages": len(messages),
-        "history_turns": len(history),
-        "system_prompt_chars": system_prompt_chars,
-        "payload_chars": payload_chars,
-        "llm_time": f"{t_llm_end - t_llm_start:.2f}s",
-    }
-
     if not training:
-        _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
+        _log_latency("request_total", {"time": f"{time.perf_counter() - t_start:.2f}s"})
         return {"customer_response": customer_response, "feedback": None}
 
     _default_analysis = {
@@ -439,8 +456,14 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
 
     try:
         customer_msg, prior_history = _extract_latest_customer_utterance(history)
+        t_pipeline_start = time.perf_counter()
         feedback = _run_evaluation_pipeline(customer_msg, message, prior_history)
+        t_enforce_start = time.perf_counter()
         _enforce_feedback_consistency(feedback, message)
+        t_enforce_end = time.perf_counter()
+
+        _log_latency("enforcement", {"time": f"{t_enforce_end - t_enforce_start:.2f}s"})
+        _log_latency("evaluation_pipeline_total", {"time": f"{t_enforce_end - t_pipeline_start:.2f}s"})
 
         if DEBUG_PROMPTS:
             print("=== FINAL FEEDBACK ===")
@@ -453,7 +476,7 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
             "analysis": _default_analysis,
         }
 
-    _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
+    _log_latency("request_total", {"time": f"{time.perf_counter() - t_start:.2f}s"})
     return {"customer_response": customer_response, "feedback": feedback}
 
 
