@@ -102,8 +102,6 @@ def build_system_prompt(scenario: str, persona: str, training: bool, stream: boo
 
     if stream:
         mode = "stream"
-    elif training:
-        mode = "training"
     else:
         mode = "plain"
 
@@ -117,9 +115,6 @@ def build_system_prompt(scenario: str, persona: str, training: bool, stream: boo
         output_format_text,
         response_rules,
     ])
-
-    if training:
-        full_prompt += "\n\n" + load_evaluation_prompt("coaching")
 
     if DEBUG_PROMPTS:
         print("=== FINAL SYSTEM PROMPT ===")
@@ -277,25 +272,118 @@ def start_conversation(scenario: str, persona: str, training: bool) -> dict:
     return {"customer_response": raw_text, "feedback": None}
 
 
+# --- Evaluation Pipeline ---
+
+def _extract_latest_customer_utterance(history: list[dict]) -> tuple[str, list[dict]]:
+    for i in range(len(history) - 1, -1, -1):
+        if history[i]["role"] == "assistant":
+            return history[i]["content"], history[:i]
+    return "", []
+
+
+def _build_history_text(history: list[dict]) -> str:
+    turns = []
+    i = 0
+    turn_num = 1
+    while i < len(history):
+        customer_msg = None
+        csr_msg = None
+        if i < len(history) and history[i]["role"] == "assistant":
+            customer_msg = history[i]["content"]
+            i += 1
+        if i < len(history) and history[i]["role"] == "user":
+            csr_msg = history[i]["content"]
+            i += 1
+        if customer_msg or csr_msg:
+            parts = [f"[Turn {turn_num}]"]
+            if customer_msg:
+                parts.append(f"Customer: {customer_msg}")
+            if csr_msg:
+                parts.append(f"CSR: {csr_msg}")
+            turns.append("\n".join(parts))
+            turn_num += 1
+    return "\n\n".join(turns)
+
+
+def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: list[dict]) -> dict:
+    history_text = _build_history_text(prior_history)
+
+    l1_parts = [
+        f'Latest customer utterance: "{customer_msg}"',
+        f'CSR\'s current utterance: "{csr_msg}"',
+    ]
+    if history_text:
+        l1_parts.append(f"\nRecent prior turns:\n{history_text}")
+    l1_input = "\n".join(l1_parts)
+
+    l1_system = load_evaluation_prompt("layer1_stage_identifier")
+    l1_resp = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "system", "content": l1_system}, {"role": "user", "content": l1_input}],
+        **FEEDBACK_SETTINGS,
+        response_format={"type": "json_object"},
+        timeout=LLM_TIMEOUT,
+    )
+    l1_output = json.loads(l1_resp.choices[0].message.content)
+
+    if DEBUG_PROMPTS:
+        print("=== LAYER 1 OUTPUT ===")
+        print(json.dumps(l1_output, indent=2))
+
+    l2_input = l1_input + f"\n\nLayer 1 output:\n{json.dumps(l1_output, indent=2)}"
+    l2_system = load_evaluation_prompt("layer2_skill_evaluator")
+    l2_resp = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "system", "content": l2_system}, {"role": "user", "content": l2_input}],
+        **FEEDBACK_SETTINGS,
+        response_format={"type": "json_object"},
+        timeout=LLM_TIMEOUT,
+    )
+    l2_output = json.loads(l2_resp.choices[0].message.content)
+
+    if DEBUG_PROMPTS:
+        print("=== LAYER 2 OUTPUT ===")
+        print(json.dumps(l2_output, indent=2))
+
+    l3_input = l2_input + f"\n\nLayer 2 output:\n{json.dumps(l2_output, indent=2)}"
+    l3_system = load_evaluation_prompt("layer3_feedback_generator")
+    l3_resp = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "system", "content": l3_system}, {"role": "user", "content": l3_input}],
+        **FEEDBACK_SETTINGS,
+        response_format={"type": "json_object"},
+        timeout=LLM_TIMEOUT,
+    )
+    l3_output = json.loads(l3_resp.choices[0].message.content)
+
+    if DEBUG_PROMPTS:
+        print("=== LAYER 3 OUTPUT ===")
+        print(json.dumps(l3_output, indent=2))
+
+    return {
+        "signals": {
+            "empathyFirst": l2_output["empathy_score"]["label"],
+            "activeListening": l2_output["active_listening_score"]["label"],
+        },
+        "nextStep": l3_output["learn_from_this_practice"]["focus"],
+        "analysis": {
+            "empathy_score": l3_output["empathy_score"],
+            "active_listening_score": l3_output["active_listening_score"],
+            "learn_from_this_practice": l3_output["learn_from_this_practice"],
+        },
+    }
+
+
 # --- Evaluation ---
 
 def call_llm(scenario: str, persona: str, training: bool, message: str, history: list[dict]) -> dict:
     t_start = time.perf_counter()
 
     if DEBUG_PROMPTS:
-        print("🚀 VERSION: ANALYSIS_FIX_V2")
+        print("🚀 VERSION: 3LAYER_PIPELINE_V1")
 
     system_prompt = build_system_prompt(scenario, persona, training)
     system_prompt = append_coaching_signal(system_prompt, history)
-
-    if training:
-        system_prompt += f"""
-
-CSR_MESSAGE_TO_EVALUATE (EVALUATE THIS AND ONLY THIS):
-\"{message}\"
-
-Your feedback MUST be based exclusively on the text above.
-Do NOT reference, draw from, or compare against any other CSR turn in the conversation history."""
 
     messages = build_messages(history, system_prompt, message)
 
@@ -307,26 +395,21 @@ Do NOT reference, draw from, or compare against any other CSR turn in the conver
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            **FEEDBACK_SETTINGS,
+            **CUSTOMER_SETTINGS,
             response_format={"type": "json_object"},
             timeout=LLM_TIMEOUT,
         )
     except Exception as e:
-        print(f"ERROR call_llm LLM call failed: {type(e).__name__}: {e}")
+        print(f"ERROR call_llm customer call failed: {type(e).__name__}: {e}")
         return {"customer_response": "I'm having trouble responding right now. Please try again.", "feedback": None}
     t_llm_end = time.perf_counter()
 
-    raw_text = response.choices[0].message.content
-
-    _default_analysis = {
-        "empathy_score": {"score": 0, "reason": "Fallback applied."},
-        "active_listening_score": {"score": 0, "reason": "Fallback applied."},
-        "learn_from_this_practice": {
-            "area": "Fallback",
-            "focus": "Fallback applied due to missing analysis.",
-            "why_it_improves_deescalation": "Ensures UI consistency.",
-        },
-    }
+    raw_text = response.choices[0].message.content.strip()
+    try:
+        parsed = json.loads(raw_text)
+        customer_response = parsed.get("customer_response", raw_text)
+    except (json.JSONDecodeError, AttributeError):
+        customer_response = raw_text
 
     _latency_fields = {
         "model": MODEL_NAME,
@@ -340,62 +423,38 @@ Do NOT reference, draw from, or compare against any other CSR turn in the conver
         "llm_time": f"{t_llm_end - t_llm_start:.2f}s",
     }
 
-    parsed = None
+    if not training:
+        _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
+        return {"customer_response": customer_response, "feedback": None}
+
+    _default_analysis = {
+        "empathy_score": {"score": 0, "reason": "Fallback applied."},
+        "active_listening_score": {"score": 0, "reason": "Fallback applied."},
+        "learn_from_this_practice": {
+            "area": "Fallback",
+            "focus": "Fallback applied due to missing analysis.",
+            "why_it_improves_deescalation": "Ensures UI consistency.",
+        },
+    }
+
     try:
-        parsed = json.loads(raw_text)
-        top_level_keys = list(parsed.keys()) if isinstance(parsed, dict) else type(parsed).__name__
-        print(f"DEBUG call_llm parsed OK — top-level keys: {top_level_keys}")
-
-        feedback = parsed.get("feedback") if training else None
-        if training:
-            if not isinstance(feedback, dict):
-                feedback = {}
-            if "analysis" not in feedback:
-                feedback["analysis"] = _default_analysis
-
-        if training and "analysis" not in feedback:
-            raise ValueError("ANALYSIS MISSING — SHOULD NEVER HAPPEN")
-
-        if training and isinstance(feedback, dict):
-            raw_feedback_before = json.dumps(parsed.get("feedback", {}), indent=2)
-            _enforce_feedback_consistency(feedback, message)
-            print("DEBUG PRE-ENFORCE feedback:")
-            print(raw_feedback_before)
-            print("DEBUG FINAL FEEDBACK:")
-            print(json.dumps(feedback, indent=2))
+        customer_msg, prior_history = _extract_latest_customer_utterance(history)
+        feedback = _run_evaluation_pipeline(customer_msg, message, prior_history)
+        _enforce_feedback_consistency(feedback, message)
 
         if DEBUG_PROMPTS:
             print("=== FINAL FEEDBACK ===")
             print(json.dumps(feedback, indent=2))
-
-        _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
-        return {
-            "customer_response": parsed["customer_response"],
-            "feedback": feedback,
-        }
-    except ValueError:
-        raise
     except Exception as e:
-        has_customer_response = isinstance(parsed, dict) and "customer_response" in parsed
-        print(
-            f"ERROR call_llm parse/extract failed: {type(e).__name__}: {e}\n"
-            f"  has_customer_response={has_customer_response}\n"
-            f"  raw_text_chars={len(raw_text)}\n"
-            f"  raw_text_preview={raw_text[:300]!r}"
-        )
-
-        fallback_feedback = {
-            "signals": {"empathyFirst": "", "activeListening": ""},
+        print(f"ERROR call_llm evaluation pipeline failed: {type(e).__name__}: {e}")
+        feedback = {
+            "signals": {"empathyFirst": "Needs Work", "activeListening": "Needs Work"},
             "nextStep": "",
             "analysis": _default_analysis,
-        } if training else None
+        }
 
-        if DEBUG_PROMPTS:
-            print("=== FINAL FEEDBACK (exception fallback) ===")
-            print(json.dumps(fallback_feedback, indent=2))
-
-        _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
-        return {"customer_response": raw_text.strip(), "feedback": fallback_feedback}
+    _log_latency("call_llm", {**_latency_fields, "total_time": f"{time.perf_counter() - t_start:.2f}s"})
+    return {"customer_response": customer_response, "feedback": feedback}
 
 
 # --- Streaming ---
