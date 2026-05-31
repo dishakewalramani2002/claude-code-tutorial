@@ -48,6 +48,21 @@ def _log_latency(fn_name: str, fields: dict) -> None:
     print("\n".join(lines))
 
 
+def _log_pipeline_error(layer: str, exc: Exception) -> None:
+    print(f"[PIPELINE ERROR]\nlayer={layer}\nerror={type(exc).__name__}: {exc}")
+
+
+def _extract_usage(response) -> dict:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return {}
+    return {
+        "input_tokens": getattr(usage, "prompt_tokens", "N/A"),
+        "output_tokens": getattr(usage, "completion_tokens", "N/A"),
+        "total_tokens": getattr(usage, "total_tokens", "N/A"),
+    }
+
+
 # --- Prompt Loading ---
 
 def load_prompt(filename: str) -> str:
@@ -307,6 +322,7 @@ def _build_history_text(history: list[dict]) -> str:
 
 def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: list[dict]) -> dict:
     history_text = _build_history_text(prior_history)
+    t_pipeline = time.perf_counter()
 
     l1_parts = [
         f'Latest customer utterance: "{customer_msg}"',
@@ -317,21 +333,36 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
     l1_input = "\n".join(l1_parts)
 
     l1_system = load_evaluation_prompt("layer1_stage_identifier")
-    t_l1 = time.perf_counter()
-    l1_resp = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "system", "content": l1_system}, {"role": "user", "content": l1_input}],
-        **FEEDBACK_SETTINGS,
-        response_format={"type": "json_object"},
-        timeout=LLM_TIMEOUT,
-    )
-    t_l1_end = time.perf_counter()
+    _log_latency("layer1_context", {
+        "customer_msg_chars": len(customer_msg),
+        "csr_msg_chars": len(csr_msg),
+        "history_chars": len(history_text),
+    })
+    t_l1_api = time.perf_counter()
+    try:
+        l1_resp = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "system", "content": l1_system}, {"role": "user", "content": l1_input}],
+            **FEEDBACK_SETTINGS,
+            response_format={"type": "json_object"},
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        _log_pipeline_error("layer1", e)
+        raise
+    t_l1_api_end = time.perf_counter()
+    t_l1_parse = time.perf_counter()
     l1_raw = l1_resp.choices[0].message.content
     l1_output = json.loads(l1_raw)
+    t_l1_parse_end = time.perf_counter()
+    l1_usage = _extract_usage(l1_resp)
     _log_latency("layer1", {
         "input_chars": len(l1_system) + len(l1_input),
         "output_chars": len(l1_raw),
-        "time": f"{t_l1_end - t_l1:.2f}s",
+        **l1_usage,
+        "api_time": f"{t_l1_api_end - t_l1_api:.2f}s",
+        "json_parse_time": f"{t_l1_parse_end - t_l1_parse:.2f}s",
+        "time": f"{t_l1_parse_end - t_l1_api:.2f}s",
     })
 
     if DEBUG_PROMPTS:
@@ -340,21 +371,36 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
 
     l2_input = l1_input + f"\n\nLayer 1 output:\n{json.dumps(l1_output, indent=2)}"
     l2_system = load_evaluation_prompt("layer2_skill_evaluator")
-    t_l2 = time.perf_counter()
-    l2_resp = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "system", "content": l2_system}, {"role": "user", "content": l2_input}],
-        **FEEDBACK_SETTINGS,
-        response_format={"type": "json_object"},
-        timeout=LLM_TIMEOUT,
-    )
-    t_l2_end = time.perf_counter()
+    _log_latency("layer2_context", {
+        "customer_msg_chars": len(customer_msg),
+        "csr_msg_chars": len(csr_msg),
+        "history_chars": len(history_text),
+    })
+    t_l2_api = time.perf_counter()
+    try:
+        l2_resp = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "system", "content": l2_system}, {"role": "user", "content": l2_input}],
+            **FEEDBACK_SETTINGS,
+            response_format={"type": "json_object"},
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        _log_pipeline_error("layer2", e)
+        raise
+    t_l2_api_end = time.perf_counter()
+    t_l2_parse = time.perf_counter()
     l2_raw = l2_resp.choices[0].message.content
     l2_output = json.loads(l2_raw)
+    t_l2_parse_end = time.perf_counter()
+    l2_usage = _extract_usage(l2_resp)
     _log_latency("layer2", {
         "input_chars": len(l2_system) + len(l2_input),
         "output_chars": len(l2_raw),
-        "time": f"{t_l2_end - t_l2:.2f}s",
+        **l2_usage,
+        "api_time": f"{t_l2_api_end - t_l2_api:.2f}s",
+        "json_parse_time": f"{t_l2_parse_end - t_l2_parse:.2f}s",
+        "time": f"{t_l2_parse_end - t_l2_api:.2f}s",
     })
 
     if DEBUG_PROMPTS:
@@ -363,26 +409,48 @@ def _run_evaluation_pipeline(customer_msg: str, csr_msg: str, prior_history: lis
 
     l3_input = l2_input + f"\n\nLayer 2 output:\n{json.dumps(l2_output, indent=2)}"
     l3_system = load_evaluation_prompt("layer3_feedback_generator")
-    t_l3 = time.perf_counter()
-    l3_resp = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "system", "content": l3_system}, {"role": "user", "content": l3_input}],
-        **FEEDBACK_SETTINGS,
-        response_format={"type": "json_object"},
-        timeout=LLM_TIMEOUT,
-    )
-    t_l3_end = time.perf_counter()
+    _log_latency("layer3_context", {
+        "customer_msg_chars": len(customer_msg),
+        "csr_msg_chars": len(csr_msg),
+        "history_chars": len(history_text),
+    })
+    t_l3_api = time.perf_counter()
+    try:
+        l3_resp = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "system", "content": l3_system}, {"role": "user", "content": l3_input}],
+            **FEEDBACK_SETTINGS,
+            response_format={"type": "json_object"},
+            timeout=LLM_TIMEOUT,
+        )
+    except Exception as e:
+        _log_pipeline_error("layer3", e)
+        raise
+    t_l3_api_end = time.perf_counter()
+    t_l3_parse = time.perf_counter()
     l3_raw = l3_resp.choices[0].message.content
     l3_output = json.loads(l3_raw)
+    t_l3_parse_end = time.perf_counter()
+    l3_usage = _extract_usage(l3_resp)
     _log_latency("layer3", {
         "input_chars": len(l3_system) + len(l3_input),
         "output_chars": len(l3_raw),
-        "time": f"{t_l3_end - t_l3:.2f}s",
+        **l3_usage,
+        "api_time": f"{t_l3_api_end - t_l3_api:.2f}s",
+        "json_parse_time": f"{t_l3_parse_end - t_l3_parse:.2f}s",
+        "time": f"{t_l3_parse_end - t_l3_api:.2f}s",
     })
 
     if DEBUG_PROMPTS:
         print("=== LAYER 3 OUTPUT ===")
         print(json.dumps(l3_output, indent=2))
+
+    _log_latency("evaluation_pipeline", {
+        "input_tokens": (l1_usage.get("input_tokens") or 0) + (l2_usage.get("input_tokens") or 0) + (l3_usage.get("input_tokens") or 0),
+        "output_tokens": (l1_usage.get("output_tokens") or 0) + (l2_usage.get("output_tokens") or 0) + (l3_usage.get("output_tokens") or 0),
+        "total_tokens": (l1_usage.get("total_tokens") or 0) + (l2_usage.get("total_tokens") or 0) + (l3_usage.get("total_tokens") or 0),
+        "time": f"{time.perf_counter() - t_pipeline:.2f}s",
+    })
 
     return {
         "signals": {
@@ -413,6 +481,12 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
 
     payload_chars = sum(len(m["content"]) for m in messages)
 
+    _log_latency("history", {
+        "turns": sum(1 for m in history if m["role"] == "assistant"),
+        "messages": len(history),
+        "chars": sum(len(m.get("content", "")) for m in history),
+    })
+
     t_llm_start = time.perf_counter()
     try:
         response = client.chat.completions.create(
@@ -428,9 +502,11 @@ def call_llm(scenario: str, persona: str, training: bool, message: str, history:
     t_llm_end = time.perf_counter()
 
     raw_text = response.choices[0].message.content.strip()
+    _customer_usage = _extract_usage(response)
     _log_latency("customer_response", {
         "input_chars": payload_chars,
         "output_chars": len(raw_text),
+        **_customer_usage,
         "time": f"{t_llm_end - t_llm_start:.2f}s",
     })
 
